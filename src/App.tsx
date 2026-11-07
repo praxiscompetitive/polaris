@@ -3,7 +3,6 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { pointer, reduced } from './motion'
 import { SECTIONS, set, useStore } from './store'
-import Orb from './components/Orb'
 import Header from './components/Header'
 import Transition, { useSiteNav } from './components/Transition'
 import Hero from './components/Hero'
@@ -106,7 +105,6 @@ export default function App() {
     <>
       <a className="skip" href="#app/explorer">Skip to the globe</a>
       <Header />
-      <Orb />
       <Rail />
       <main>
         <Hero />
