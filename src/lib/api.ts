@@ -12,7 +12,18 @@ export async function get(url: string, signal?: AbortSignal, ms = 20000): Promis
   }
   return r
 }
-export const json = <T,>(url: string, s?: AbortSignal) => get(url, s).then((r) => r.json() as Promise<T>)
+/** GET JSON, shared per session: the hero, the ticker and a section asking for the same feed make one request.
+ *  A caller's abort only detaches that caller; failures are not cached. */
+const memo = new Map<string, Promise<unknown>>()
+export function json<T>(url: string, s?: AbortSignal): Promise<T> {
+  if (!memo.has(url)) memo.set(url, get(url).then((r) => r.json()).catch((e) => { memo.delete(url); throw e }))
+  const p = memo.get(url) as Promise<T>
+  if (!s) return p
+  return new Promise<T>((ok, no) => {
+    s.addEventListener('abort', () => no(new Error('Cancelled')), { once: true })
+    p.then(ok, no)
+  })
+}
 
 export type Async<T> = { data?: T; error?: string; loading: boolean }
 /** One request per deps change; aborted on unmount so a closed view never paints stale data. */

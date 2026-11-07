@@ -134,7 +134,7 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
         onReady={setViewer} onCamera={(c) => setSt((s) => ({ ...s, c }))} onPick={onPick} />
 
       <header className="mbar">
-        <button className="mbar__back" onClick={close} aria-label="Close and return to the overview"><ArrowLeft size={18} /> <span>POLARIS</span></button>
+        <button className="mbar__back" onClick={close} aria-label="Close and return to the overview"><ArrowLeft size={18} /><img src="/brand/icon-180.png" alt="" width={26} height={26} /><span>POLARIS</span></button>
         <nav className="mbar__tabs" aria-label="Views">
           {VIEWS.map((v) => <button key={v} aria-current={st.view === v ? 'page' : undefined} onClick={() => tab(v)}>{TITLES[v]}</button>)}
         </nav>
@@ -155,6 +155,7 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
         </>
       )}
 
+      {st.view !== 'observatory' && <Hint mobile={mobile} />}
       {comparing && <Divider split={split} setSplit={setSplit} left={st.t ?? 'latest'} right={st.cmp!} />}
 
       {legends.length > 0 && st.view !== 'observatory' && (
@@ -205,6 +206,23 @@ function EonetToggle(vp: VP) {
       <label className="pcheck"><input type="checkbox" checked={on} onChange={(e) => setOn(e.target.checked)} /> Natural events now (NASA EONET)</label>
       {on && <EonetOverlay viewer={vp.viewer} />}
     </fieldset>
+  )
+}
+
+/** First visit only: how to drive the globe. Leaves on its own after the first drag, or on dismiss. */
+function Hint({ mobile }: { mobile: boolean }) {
+  const [show, setShow] = useState(() => { try { return !localStorage.getItem('polaris.hint') } catch { return true } })
+  useEffect(() => {
+    if (!show) return
+    const done = () => { setShow(false); try { localStorage.setItem('polaris.hint', '1') } catch { /* private mode */ } }
+    const t = setTimeout(() => addEventListener('pointerdown', done, { once: true }), 1500)
+    return () => { clearTimeout(t); removeEventListener('pointerdown', done) }
+  }, [show])
+  if (!show) return null
+  return (
+    <p className="hint" role="status">
+      {mobile ? 'Drag to turn the Earth, pinch to zoom, tap for a reading.' : 'Drag to turn the Earth, scroll to zoom, right-drag to tilt, click for a reading.'}
+    </p>
   )
 }
 

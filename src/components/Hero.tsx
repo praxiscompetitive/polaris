@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import type * as ThreeNS from 'three'
 type T3 = typeof ThreeNS
 import { EASE, isSmall, reduced } from '../motion'
-import Kinetic from './Kinetic'
+import { eonet } from '../data/feeds'
+import { useData } from '../lib/api'
 
 const RAD = Math.PI / 180
 /** lat/lon → point on three's SphereGeometry (u = 0 at 180°W). */
@@ -31,7 +32,7 @@ varying vec2 vUv; varying vec3 vN;
 void main() {
   float d = dot(normalize(vN), sun);
   // night side keeps a trace of the day texture so continents still read under the city lights
-  vec3 c = mix(texture2D(night, vUv).rgb * 1.6 + texture2D(day, vUv).rgb * 0.16, texture2D(day, vUv).rgb, smoothstep(-0.12, 0.18, d));
+  vec3 c = mix(texture2D(night, vUv).rgb * 1.6 + texture2D(day, vUv).rgb * 0.26, texture2D(day, vUv).rgb, smoothstep(-0.12, 0.18, d));
   gl_FragColor = vec4(c, 1.0);
 }`
 const ATMO_V = /* glsl */ `
@@ -41,7 +42,8 @@ const ATMO_F = /* glsl */ `
 varying vec3 vN; varying vec3 vV;
 void main() { float f = pow(1.0 - abs(dot(vN, vV)), 4.0); gl_FragColor = vec4(0.22, 0.78, 0.91, f * 0.32); }`
 
-type Opts = { onPoint?: (ll: { lat: number; lon: number } | null) => void; focus?: { lat: number; lon: number } }
+export type Marker = { lat: number; lon: number; color: string }
+type Opts = { onPoint?: (ll: { lat: number; lon: number } | null) => void; focus?: { lat: number; lon: number }; markers?: Marker[] }
 
 /**
  * The landing Earth: Blue Marble by day, Black Marble by night, the terminator where the sun really is now.
@@ -66,7 +68,7 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
       renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 2))
       const scene = new THREE.Scene()
       const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50)
-      cam.position.z = 4.4
+      cam.position.z = 5.6
 
       const tex = new THREE.TextureLoader()
       const load = (u: string) => { const t = tex.load(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t }
@@ -102,6 +104,50 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
       scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.06, 64, 32),
         new THREE.ShaderMaterial({ vertexShader: ATMO_V, fragmentShader: ATMO_F, transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending })))
 
+      // the logo, in 3D: a tilted orbit with a travelling satellite, and the pole star above the planet
+      const orbit = new THREE.Group()
+      orbit.rotation.set(1.22, 0, -0.38)
+      const ring = new THREE.BufferGeometry().setFromPoints(new THREE.EllipseCurve(0, 0, 1.34, 1.34).getPoints(160).map((p) => new THREE.Vector3(p.x, p.y, 0)))
+      orbit.add(new THREE.LineLoop(ring, new THREE.LineBasicMaterial({ color: '#38c6e8', transparent: true, opacity: 0.5 })))
+      const sat = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), new THREE.MeshBasicMaterial({ color: '#dceaf2' }))
+      orbit.add(sat)
+      scene.add(orbit)
+      const starTex = (() => {
+        const c = document.createElement('canvas'); c.width = c.height = 128
+        const g = c.getContext('2d')!, r = g.createRadialGradient(64, 64, 0, 64, 64, 64)
+        r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.08, 'rgba(220,234,242,.9)'); r.addColorStop(0.3, 'rgba(56,198,232,.12)'); r.addColorStop(1, 'rgba(56,198,232,0)')
+        g.fillStyle = r; g.fillRect(0, 0, 128, 128)
+        g.fillStyle = '#fff'; g.beginPath() // four-point star, as in the mark
+        g.moveTo(64, 2); g.lineTo(68, 60); g.lineTo(126, 64); g.lineTo(68, 68); g.lineTo(64, 126); g.lineTo(60, 68); g.lineTo(2, 64); g.lineTo(60, 60); g.fill()
+        return new THREE.CanvasTexture(c)
+      })()
+      const star = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
+      star.scale.setScalar(0.34)
+      star.position.set(0, 1.24, 0)
+      scene.add(star)
+      // faint fixed starfield far behind
+      const sf: number[] = []
+      for (let i = 0; i < 700; i++) { const v = new THREE.Vector3().randomDirection().multiplyScalar(18); if (v.z < 2) sf.push(v.x, v.y, v.z) }
+      const sfg = new THREE.BufferGeometry(); sfg.setAttribute('position', new THREE.Float32BufferAttribute(sf, 3))
+      scene.add(new THREE.Points(sfg, new THREE.PointsMaterial({ color: '#dceaf2', size: 0.035, transparent: true, opacity: 0.45 })))
+
+      // live markers (EONET), rebuilt whenever the caller passes a new array
+      let shown: Marker[] | undefined
+      let dots: ThreeNS.Points | null = null
+      const syncMarkers = () => {
+        const m = o.current.markers
+        if (m === shown) return
+        shown = m
+        if (dots) { earth.remove(dots); dots.geometry.dispose() }
+        if (!m?.length) return
+        const pos: number[] = [], col: number[] = [], c = new THREE.Color()
+        for (const k of m) { pos.push(...ll2v(THREE, k.lat, k.lon, 1.008).toArray()); c.set(k.color); col.push(c.r, c.g, c.b) }
+        const g = new THREE.BufferGeometry()
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
+        dots = new THREE.Points(g, new THREE.PointsMaterial({ size: small ? 0.05 : 0.038, vertexColors: true }))
+        earth.add(dots)
+      }
+
       // start facing the featured region
       let spin = f ? Math.PI / 2 - (f.lon + 180) * RAD : 0
       earth.rotation.x = 0.28
@@ -109,7 +155,7 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
         const r = cv.parentElement!.getBoundingClientRect()
         renderer.setSize(r.width, r.height, false)
         cam.aspect = r.width / r.height
-        cam.position.z = r.width / r.height < 1 ? 4.4 / Math.max(0.62, r.width / r.height) : 4.4
+        cam.position.z = r.width / r.height < 1 ? 5.6 / Math.max(0.62, r.width / r.height) : 5.6 // room for the orbit and the star
         cam.updateProjectionMatrix()
       }
       size()
@@ -144,6 +190,9 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
         if (!visible) return
         if (!dragging) { spin += vel; vel *= 0.94; if (!still) spin += 0.0006 }
         earth.rotation.y = spin
+        syncMarkers()
+        const ts = (performance.now() - t0) / 1000
+        if (!still) { const a = ts * 0.12; sat.position.set(Math.cos(a) * 1.34, Math.sin(a) * 1.34, 0); star.material.rotation = Math.sin(ts * 0.4) * 0.06 }
         const k = 1 + Math.sin((performance.now() - t0) / 500) * 0.25
         pin.scale.setScalar(still ? 1 : k)
         if (renderer.info.render.frame % 600 === 0) { const n = subsolar(); mat.uniforms.sun.value.copy(ll2v(THREE, n.lat, n.lon)) }
@@ -163,12 +212,22 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
   }, [])
 }
 
+/** Open EONET events as hero markers: wildfires, storms, volcanoes, floods, other. Colours match the Events view. */
+const EV_COLOR: Record<string, string> = { wildfires: '#d95926', floods: '#199e70', severeStorms: '#c98500', volcanoes: '#d55181' }
+export function useMarkers() {
+  const d = useData((s) => eonet(30, s), [])
+  const open = d.data?.filter((e) => !e.closed)
+  const list = useMemo(() => open?.map((e) => ({ lat: e.lat, lon: e.lon, color: EV_COLOR[e.cat] ?? '#2399ba' })), [d.data])
+  return { list, open: open && new Set(open.map((e) => e.id)).size }
+}
+
 export default function Hero() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const [noGL, setNoGL] = useState(false)
   const [pt, setPt] = useState<{ lat: number; lon: number } | null>(null)
   const sun = subsolar()
-  useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 } })
+  const markers = useMarkers()
+  useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
 
   useEffect(() => {
     const tl = gsap.timeline({ defaults: { ease: EASE.out } })
@@ -179,7 +238,7 @@ export default function Hero() {
   return (
     <section id="home" data-section="home" className="hero" aria-label="POLARIS">
       <div className="hero__copy">
-        <h1 className="hero__word"><Kinetic text="POLARIS" magnet="vf" className="wordmark" reveal /></h1>
+        <h1 className="hero__word"><img src="/brand/wordmark.png" alt="POLARIS" width={606} height={63} fetchPriority="high" /></h1>
         <p className="hero__stmt">An open window into our planet.</p>
         <p className="hero__sub">Real satellite, ocean and climate data from NASA, NOAA and Copernicus, on a live 3D globe.</p>
         <div className="hero__row">
@@ -193,6 +252,7 @@ export default function Hero() {
           : <canvas ref={canvas} className="hero__canvas" aria-label="Interactive Earth. Drag to rotate." />}
         <figcaption className="readout" aria-live="off">
           <span>{pt ? fmtLL(pt.lat, pt.lon) : 'Drag to rotate'}</span>
+          {markers.list && <span className="legendline"><i className="swatch" style={{ background: '#d95926' }} /> {markers.open} natural events open now (NASA EONET)</span>}
           <span className="muted">Sun overhead near {fmtLL(sun.lat, sun.lon)}</span>
         </figcaption>
       </figure>

@@ -4,9 +4,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { pointer, reduced } from './motion'
 import { SECTIONS, set, useStore } from './store'
 import Orb from './components/Orb'
+import Header from './components/Header'
 import Transition, { useSiteNav } from './components/Transition'
 import Hero from './components/Hero'
-import { Events, Explorer, Monitor, Observatory, Ocean, Region, Sources } from './components/Landing'
+import { Events, Explorer, LiveStrip, Monitor, Observatory, Ocean, Region, Sources } from './components/Landing'
+import { useReveal } from './motion'
 import Footer from './components/Footer'
 import MissionGate from './components/MissionGate'
 
@@ -98,14 +100,17 @@ export default function App() {
     return () => { vel.kill(); removeEventListener('pointermove', mag) }
   }, [])
   useSiteNav()
+  useReveal()
 
   return (
     <>
       <a className="skip" href="#app/explorer">Skip to the globe</a>
+      <Header />
       <Orb />
       <Rail />
       <main>
         <Hero />
+        <LiveStrip />
         <Explorer />
         <Ocean />
         <Monitor />

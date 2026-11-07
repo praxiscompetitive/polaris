@@ -45,9 +45,13 @@ export type SstDaily = { year: number; data: (number | null)[]; preliminaryFrom:
 export const sstDaily = (s?: AbortSignal) => json<SstDaily>('/api/sst', s)
 
 /** NOAA GML sends CORS headers, so CO₂ comes straight from the source. Columns: year, month, decimal, average, deseasonalized. */
-export async function co2(s?: AbortSignal) {
-  const t = await (await get('https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv', s)).text()
-  return rows(t).filter((r) => !Number.isNaN(r[3])).map((r) => ({ y: r[0], m: r[1], t: r[2], ppm: r[3], trend: r[4] }))
+type Co2 = { y: number; m: number; t: number; ppm: number; trend: number }[]
+let co2p: Promise<Co2> | null = null // one download per session, shared by ticker, section and Observatory
+export function co2(s?: AbortSignal): Promise<Co2> {
+  co2p ??= get('https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv').then((r) => r.text())
+    .then((t) => rows(t).filter((r) => !Number.isNaN(r[3])).map((r) => ({ y: r[0], m: r[1], t: r[2], ppm: r[3], trend: r[4] })))
+    .catch((e) => { co2p = null; throw e })
+  return s ? new Promise((ok, no) => { s.addEventListener('abort', () => no(new Error('Cancelled')), { once: true }); co2p!.then(ok, no) }) : co2p
 }
 
 /* ---------- point readouts (model data, labelled as such) ---------- */

@@ -108,5 +108,6 @@ export function tileUrl(l: Layer, t?: string) {
     return `https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${encodeURIComponent(l.ref)}` +
       `&STYLE=${encodeURIComponent('cmap:speed,vectorStyle:solidAndVector')}&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png`
   const tms = `GoogleMapsCompatible_Level${l.max}`
-  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${l.ref}/default/${clampDate(l, t) ?? 'default'}/${tms}/{z}/{y}/{x}.${l.ext}`
+  // no date chosen: GIBS's own 'default' is its newest complete image (today-2 can sit past the last 8/16-day composite)
+  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${l.ref}/default/${(t && clampDate(l, t)) || 'default'}/${tms}/{z}/{y}/{x}.${l.ext}`
 }

@@ -1,4 +1,5 @@
 import gsap from 'gsap'
+import { useEffect } from 'react'
 
 /** One vocabulary of timing/easing for the whole site. */
 export const EASE = {
@@ -51,4 +52,16 @@ export function scramble(el: HTMLElement, to: string, ms = 700) {
   }
   raf = requestAnimationFrame(tick)
   return () => cancelAnimationFrame(raf)
+}
+
+/** Sections assemble as they arrive: heading, then body, then media (CSS staggers by child order). One-shot. */
+export function useReveal() {
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }),
+      { rootMargin: '0px 0px -12% 0px' },
+    )
+    document.querySelectorAll('.sec').forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
 }

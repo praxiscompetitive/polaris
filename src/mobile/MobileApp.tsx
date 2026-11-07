@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { reduced } from '../motion'
+import { reduced, useReveal } from '../motion'
 import { SECTIONS, SectionId, set, useStore } from '../store'
 import Transition, { navigate, useSiteNav } from '../components/Transition'
-import Kinetic from '../components/Kinetic'
 import Icon from '../components/Icons'
-import { fmtLL, useEarth } from '../components/Hero'
-import { Events, Explorer, Monitor, Observatory, Ocean, Region, Sources } from '../components/Landing'
+import { fmtLL, useEarth, useMarkers } from '../components/Hero'
+import { Events, Explorer, LiveStrip, Monitor, Observatory, Ocean, Region, Sources } from '../components/Landing'
 import MissionGate from '../components/MissionGate'
 import './mobile.css'
 
@@ -20,17 +19,19 @@ function Hero() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const [noGL, setNoGL] = useState(false)
   const [pt, setPt] = useState<{ lat: number; lon: number } | null>(null)
-  useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 } })
+  const markers = useMarkers()
+  useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
   return (
     <section id="home" data-section="home" className="m-hero" aria-label="POLARIS">
+      <img className="m-hero__icon" src="/brand/icon-180.png" alt="" width={40} height={40} />
       <div className="m-hero__stage">
         {noGL
           ? <img src="/earth-day.jpg" alt="Blue Marble: cloud-free Earth, NASA" width={2048} height={1024} />
           : <canvas ref={canvas} aria-label="Interactive Earth. Drag to rotate." />}
-        <p className="m-hero__ll mono" aria-hidden="true">{pt ? fmtLL(pt.lat, pt.lon) : 'Drag to rotate'}</p>
+        <p className="m-hero__ll mono" aria-hidden="true">{pt ? fmtLL(pt.lat, pt.lon) : markers.open ? `${markers.open} natural events open now` : 'Drag to rotate'}</p>
       </div>
       <div className="m-hero__copy">
-        <h1><Kinetic text="POLARIS" className="m-wordmark" reveal /></h1>
+        <h1 className="m-hero__word"><img src="/brand/wordmark.png" alt="POLARIS" width={606} height={63} /></h1>
         <p className="m-hero__stmt">An open window into our planet.</p>
         <p className="m-hero__sub">Real satellite, ocean and climate data on a live 3D globe.</p>
         <a className="btn btn--solid" href="#app/explorer">Open the globe</a>
@@ -97,11 +98,13 @@ export default function MobileApp() {
     set({})
   }, [])
   useSiteNav()
+  useReveal()
 
   return (
     <div className="m">
       <main>
         <Hero />
+        <LiveStrip />
         <Explorer />
         <Ocean />
         <Monitor />
