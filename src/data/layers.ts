@@ -18,6 +18,7 @@ export type Layer = {
   from?: string
   step?: 'P1D' | 'P8D' | 'P16D' | 'P1Y'
   years?: number[] // for sparse annual products
+  lag?: number // days the provider trails real time; default 2 (SMAP salinity runs about 4 behind)
   legend?: string // provider-issued legend image
   res: string
   period: string
@@ -63,7 +64,7 @@ export const LAYERS: Layer[] = [
   { id: 'chl', title: 'Chlorophyll-a', group: 'ocean', src: 'gibs', kind: 'gibs', ref: 'MODIS_Aqua_L2_Chlorophyll_A', ext: 'png', max: 7, overlay: true,
     from: '2002-07-04', step: 'P1D', legend: LEG('MODIS_Chlorophyll'), res: '1 km', period: 'Daily swaths (gaps under cloud)', method: 'MODIS Aqua ocean colour, OCI algorithm.' },
   { id: 'sss', title: 'Sea surface salinity', group: 'ocean', src: 'gibs', kind: 'gibs', ref: 'SMAP_L3_Sea_Surface_Salinity_CAP_8Day_RunningMean', ext: 'png', max: 6, overlay: true,
-    from: '2015-05-08', step: 'P1D', legend: LEG('SMAP_Sea_Surface_Salinity'), res: '~40 km', period: '8-day running mean', method: 'SMAP L-band radiometer, JPL CAP algorithm.' },
+    from: '2015-05-08', step: 'P1D', lag: 4, legend: LEG('SMAP_Sea_Surface_Salinity'), res: '~40 km', period: '8-day running mean', method: 'SMAP L-band radiometer, JPL CAP algorithm.' },
   { id: 'currents', title: 'Surface currents (latest)', group: 'ocean', src: 'cmems', kind: 'cmems', ref: CMEMS_CUR, max: 8, overlay: true,
     legend: `https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetLegend&LAYER=${encodeURIComponent(CMEMS_CUR)}&STYLE=${encodeURIComponent('cmap:speed,vectorStyle:solidAndVector')}&FORMAT=image%2Fsvg%2Bxml`,
     res: '1/12° (~9 km)', period: 'Daily mean, latest analysis', method: 'NEMO ocean model with data assimilation. Model output, not observation.' },
@@ -99,7 +100,7 @@ export const GROUPS: { id: Group; title: string }[] = [
 
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 /** Most recent date worth asking for: providers publish a day or two behind. */
-export const latest = (l: Layer) => (l.years ? `${l.years.at(-1)}-01-01` : iso(new Date(Date.now() - 2 * 864e5)))
+export const latest = (l: Layer) => (l.years ? `${l.years.at(-1)}-01-01` : iso(new Date(Date.now() - (l.lag ?? 2) * 864e5)))
 
 /** Snap a requested date into what the layer can serve. Static layers ignore dates. */
 export function clampDate(l: Layer, t?: string) {
