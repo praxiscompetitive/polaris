@@ -230,9 +230,11 @@ export default function Hero() {
   useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
 
   useEffect(() => {
-    const tl = gsap.timeline({ defaults: { ease: EASE.out } })
-    tl.from('.hero__stmt, .hero__sub, .hero__row', { autoAlpha: 0, y: 16, duration: 0.9, stagger: 0.1 }, 0.3)
-    return () => { tl.kill() }
+    // context.revert() restores the elements, so a remount (React strict mode) animates from the real start, not from hidden
+    const ctx = gsap.context(() => {
+      gsap.from('.hero__stmt, .hero__sub, .hero__row', { autoAlpha: 0, y: 16, duration: 0.9, stagger: 0.1, delay: 0.3, ease: EASE.out })
+    })
+    return () => ctx.revert()
   }, [])
 
   return (
@@ -242,7 +244,7 @@ export default function Hero() {
         <p className="hero__stmt">An open window into our planet.</p>
         <p className="hero__sub">Real satellite, ocean and climate data from NASA, NOAA and Copernicus, on a live 3D globe.</p>
         <div className="hero__row">
-          <a className="btn btn--solid" href="#app/explorer" data-magnetic>Open the globe</a>
+          <a className="btn btn--solid" href="#app/explorer">Open the globe</a>
           <a className="btn" href="#region">Sri Lanka</a>
         </div>
       </div>

@@ -12,7 +12,7 @@ export const SECTIONS = [
 ] as const
 export type SectionId = (typeof SECTIONS)[number]['id']
 
-type State = { current: SectionId; visited: SectionId[]; debug: boolean }
+type State = { current: SectionId; visited: SectionId[] }
 const read = <T,>(k: string, d: T): T => {
   try {
     return JSON.parse(sessionStorage.getItem(k) ?? '') as T
@@ -23,7 +23,6 @@ const read = <T,>(k: string, d: T): T => {
 let state: State = {
   current: 'home',
   visited: read<SectionId[]>('polaris.visited', ['home']),
-  debug: read('polaris.debug', false),
 }
 const subs = new Set<() => void>()
 
@@ -31,11 +30,9 @@ export function set(p: Partial<State>) {
   state = { ...state, ...p }
   try {
     sessionStorage.setItem('polaris.visited', JSON.stringify(state.visited))
-    sessionStorage.setItem('polaris.debug', JSON.stringify(state.debug))
   } catch {
     /* storage unavailable — session memory is a nicety */
   }
-  document.body.classList.toggle('debug', state.debug)
   subs.forEach((f) => f())
 }
 export const get = () => state

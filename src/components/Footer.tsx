@@ -1,7 +1,7 @@
 import { FormEvent, useRef, useState } from 'react'
 import { LAYERS } from '../data/layers'
 import { VIEWS } from '../lib/deeplink'
-import { SECTIONS, SectionId, get, set, useStore } from '../store'
+import { SECTIONS, SectionId, useStore } from '../store'
 import { navigate } from './Transition'
 
 /**
@@ -20,14 +20,13 @@ export default function Footer() {
     setCmd('')
     if (!c) return
     let out: string[] = []
-    if (c === 'help') out = ['open <view>   views: ' + VIEWS.join(', '), 'layer <id>    opens Explorer with that layer', 'layers  goto <section>  visited  debug  clear']
+    if (c === 'help') out = ['open <view>   views: ' + VIEWS.join(', '), 'layer <id>    opens Explorer with that layer', 'layers  goto <section>  visited  clear']
     else if (c === 'clear') return setLog([])
     else if (c === 'open' && (VIEWS as readonly string[]).includes(arg)) { location.hash = `#app/${arg}`; out = [`opening ${arg}`] }
     else if (c === 'layer' && LAYERS.some((l) => l.id === arg)) { location.hash = `#app/explorer?l=${arg}`; out = [`opening ${arg}`] }
     else if (c === 'layers') out = LAYERS.map((l) => `${l.id.padEnd(12)} ${l.title}`)
     else if (c === 'goto' && SECTIONS.some((s) => s.id === arg)) { navigate(arg as SectionId); out = [`going to ${arg}`] }
     else if (c === 'visited') out = [`${visited.length}/${SECTIONS.length}: ${visited.join(', ')}`]
-    else if (c === 'debug') { const d = !get().debug; set({ debug: d }); out = [`debug overlay ${d ? 'on' : 'off'}`] }
     else out = [`unknown command: ${cmd.trim()}. Try help.`]
     setLog((l) => [...l, `> ${cmd.trim()}`, ...out].slice(-60))
     requestAnimationFrame(() => box.current?.scrollTo({ top: 9e5 }))

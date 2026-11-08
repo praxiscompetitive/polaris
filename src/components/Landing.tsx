@@ -6,6 +6,12 @@ import { co2, eonet, gistemp, marine, quakes, sstDaily } from '../data/feeds'
 import { useData } from '../lib/api'
 import { daysAgo, snapshot } from '../lib/wms'
 import Chart from './Chart'
+import { SECTIONS, SectionId } from '../store'
+
+const Eyebrow = ({ id }: { id: SectionId }) => {
+  const n = SECTIONS.findIndex((s) => s.id === id)
+  return <p className="eyebrow">{String(n).padStart(2, '0')} · {SECTIONS[n].label}</p>
+}
 
 /** The five experiences, the featured region and the sources, as landing sections. Shared by desktop and mobile. */
 
@@ -36,6 +42,7 @@ export function Explorer() {
         alt={`True-colour satellite view of South Asia and the Bay of Bengal on ${t}`} w={1600} h={600}
         caption={`South Asia, ${t}. VIIRS NOAA-20 true colour via NASA GIBS.`} />
       <div className="sec__body">
+        <Eyebrow id="explorer" />
         <h2 id="h-explorer" className="h2">Every layer, one globe.</h2>
         <p className="lead">Switch between true colour, vegetation, land temperature, night lights, population and elevation. Daily imagery goes back to 2000.</p>
       </div>
@@ -116,6 +123,7 @@ export function Ocean() {
         alt={`Sea surface temperature anomaly across the northern Indian Ocean on ${t}. Red is warmer than normal, blue cooler.`} w={800} h={800}
         caption={`Sea surface temperature anomaly, ${t}. JPL MUR via NASA GIBS.`} />
       <div className="sec__body">
+        <Eyebrow id="ocean" />
         <h2 id="h-ocean" className="h2">The ocean, read from orbit.</h2>
         <p className="lead">Temperature, anomaly, chlorophyll, salinity and surface currents, with a readout wherever you tap the sea.</p>
         <dl className="readings" aria-live="polite">
@@ -148,6 +156,7 @@ export function Monitor() {
   return (
     <section id="monitor" data-section="monitor" className="sec sec--monitor" aria-labelledby="h-monitor">
       <div className="sec__body">
+        <Eyebrow id="monitor" />
         <h2 id="h-monitor" className="h2">The same place, months or years apart.</h2>
         <p className="lead">Drag the divider to compare. Each story opens in Monitor on the globe, where you choose any layer and any two dates.</p>
       </div>
@@ -183,6 +192,7 @@ export function Events() {
   return (
     <section id="events" data-section="events" className="sec sec--events" aria-labelledby="h-events">
       <div className="sec__body">
+        <Eyebrow id="events" />
         <h2 id="h-events" className="h2">What the planet is doing now.</h2>
         <p className="lead">Open natural events tracked by NASA EONET, and every M2.5+ earthquake USGS recorded in the last seven days.</p>
       </div>
@@ -241,6 +251,7 @@ export function Observatory() {
   return (
     <section id="observatory" data-section="observatory" className="sec sec--obs" aria-labelledby="h-obs">
       <div className="obs__head">
+        <Eyebrow id="observatory" />
         <h2 id="h-obs" className="h2">Measured, not modelled.</h2>
         <dl className="stats">
           <div><dt>Global temperature anomaly, {last?.[0] ?? 'latest year'}</dt><dd>{last ? `${last[1] > 0 ? '+' : ''}${last[1].toFixed(2)} °C` : g.error ? 'Unavailable' : <span className="skel" />}</dd></div>
@@ -278,6 +289,7 @@ export function Region() {
   return (
     <section id="region" data-section="region" className="sec sec--region" aria-labelledby="h-region">
       <div className="sec__body">
+        <Eyebrow id="region" />
         <h2 id="h-region" className="h2">Sri Lanka, from orbit and from the sea.</h2>
         <p className="lead">Our first featured region: coastal water temperature, monsoon chlorophyll, vegetation and two decades of forest change.</p>
         <table className="coast">
@@ -300,6 +312,7 @@ export function Region() {
 export function Sources() {
   return (
     <section id="sources" data-section="sources" className="sec sec--sources" aria-labelledby="h-sources">
+      <Eyebrow id="sources" />
       <h2 id="h-sources" className="h2">Where every number comes from.</h2>
       <p className="lead">POLARIS shows other people's measurements. These are the people, with their licences and what we use from each.</p>
       <ul className="srcgrid">
