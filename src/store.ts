@@ -12,27 +12,18 @@ export const SECTIONS = [
 ] as const
 export type SectionId = (typeof SECTIONS)[number]['id']
 
-type State = { current: SectionId; visited: SectionId[] }
-const read = <T,>(k: string, d: T): T => {
-  try {
-    return JSON.parse(sessionStorage.getItem(k) ?? '') as T
-  } catch {
-    return d
-  }
+/** The page a URL belongs to: #ocean is the Ocean page, #app/ocean?… is the map opened from it. */
+export function fromHash(h = location.hash): SectionId {
+  const m = h.match(/^#(?:app\/)?([a-z]+)/)
+  return SECTIONS.find((s) => s.id === m?.[1])?.id ?? 'home'
 }
-let state: State = {
-  current: 'home',
-  visited: read<SectionId[]>('polaris.visited', ['home']),
-}
+
+let state = { current: fromHash() }
 const subs = new Set<() => void>()
 
-export function set(p: Partial<State>) {
-  state = { ...state, ...p }
-  try {
-    sessionStorage.setItem('polaris.visited', JSON.stringify(state.visited))
-  } catch {
-    /* storage unavailable — session memory is a nicety */
-  }
+export function setCurrent(current: SectionId) {
+  if (current === state.current) return
+  state = { current }
   subs.forEach((f) => f())
 }
 export const get = () => state

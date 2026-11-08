@@ -15,14 +15,14 @@ const Eyebrow = ({ id }: { id: SectionId }) => {
 
 /** The five experiences, the featured region and the sources, as landing sections. Shared by desktop and mobile. */
 
-const C1 = '#2399ba' // chart palette, validated against #071526
+const C1 = '#2f55e8' // chart line, on the light page
 const LK = REGIONS[0]
 
 function Snap({ src, alt, w, h, caption }: { src: string; alt: string; w: number; h: number; caption: string }) {
   const [state, setState] = useState<'load' | 'ok' | 'err'>('load')
   return (
     <figure className={`snap snap--${state}`}>
-      <div className="snap__frame" style={{ aspectRatio: `${w} / ${h}` }}>
+      <div className="snap__frame" style={{ aspectRatio: `${w} / ${h}`, '--ar': w / h } as CSSProperties}>
         {state !== 'err'
           ? <img src={src} alt={alt} width={w} height={h} loading="lazy" decoding="async" onLoad={() => setState('ok')} onError={() => setState('err')} />
           : <p className="snap__err">NASA GIBS did not return this image. The layer is still available on the globe.</p>}
@@ -33,18 +33,15 @@ function Snap({ src, alt, w, h, caption }: { src: string; alt: string; w: number
 }
 
 export function Explorer() {
-  const t = daysAgo(2)
   // ten layers: two rows of five on wide screens. MODIS true colour is left to the globe (VIIRS covers the same look)
   const pick = LAYERS.filter((l) => (l.group === 'base' || l.group === 'land') && l.id !== 'truecolor')
   return (
-    <section id="explorer" data-section="explorer" className="sec sec--explorer" aria-labelledby="h-explorer">
-      <Snap src={snapshot(['VIIRS_NOAA20_CorrectedReflectance_TrueColor', 'Coastlines_15m'], [62, 8, 102, 23], 1600, 600, t)}
-        alt={`True-colour satellite view of South Asia and the Bay of Bengal on ${t}`} w={1600} h={600}
-        caption={`South Asia, ${t}. VIIRS NOAA-20 true colour via NASA GIBS.`} />
+    <section className="sec sec--explorer" aria-labelledby="h-explorer">
       <div className="sec__body">
         <Eyebrow id="explorer" />
         <h2 id="h-explorer" className="h2">Every layer, one globe.</h2>
         <p className="lead">Switch between true colour, vegetation, land temperature, night lights, population and elevation. Daily imagery goes back to 2000.</p>
+        <a className="btn btn--solid" href="#app/explorer">Open the globe</a>
       </div>
       <ul className="gallery" aria-label="Open the globe with a layer">
         {pick.map((l) => (
@@ -118,7 +115,7 @@ export function Ocean() {
   const m = useData((s) => marine([galle], 0, s), [])
   const now = m.data?.[0]
   return (
-    <section id="ocean" data-section="ocean" className="sec sec--split" aria-labelledby="h-ocean">
+    <section className="sec sec--split" aria-labelledby="h-ocean">
       <Snap src={snapshot(['BlueMarble_ShadedRelief_Bathymetry', 'GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies', 'Coastlines_15m'], [55, -20, 105, 30], 800, 800, t)}
         alt={`Sea surface temperature anomaly across the northern Indian Ocean on ${t}. Red is warmer than normal, blue cooler.`} w={800} h={800}
         caption={`Sea surface temperature anomaly, ${t}. JPL MUR via NASA GIBS.`} />
@@ -154,7 +151,7 @@ export function Monitor() {
   const img = (t: string) => snapshot([...st.layers], [...st.bbox] as [number, number, number, number], 900, 900, t)
   const label = (t: string) => (st.a.endsWith('-01-01') && st.b.endsWith('-01-01') ? t.slice(0, 4) : t)
   return (
-    <section id="monitor" data-section="monitor" className="sec sec--monitor" aria-labelledby="h-monitor">
+    <section className="sec sec--monitor" aria-labelledby="h-monitor">
       <div className="sec__body">
         <Eyebrow id="monitor" />
         <h2 id="h-monitor" className="h2">The same place, months or years apart.</h2>
@@ -190,11 +187,12 @@ export function Events() {
   const cats = [...open].map(([k, v]) => [k, v.size] as const).sort((p, q) => q[1] - p[1])
   const big = eq.data?.reduce((p, q) => (q.mag > p.mag ? q : p))
   return (
-    <section id="events" data-section="events" className="sec sec--events" aria-labelledby="h-events">
+    <section className="sec sec--events" aria-labelledby="h-events">
       <div className="sec__body">
         <Eyebrow id="events" />
         <h2 id="h-events" className="h2">What the planet is doing now.</h2>
         <p className="lead">Open natural events tracked by NASA EONET, and every M2.5+ earthquake USGS recorded in the last seven days.</p>
+        <a className="btn btn--solid" href="#app/events">Open Events</a>
       </div>
       <div className="bento" aria-live="polite" aria-busy={ev.loading || eq.loading}>
         <article className="bento__cell bento__cell--big">
@@ -215,7 +213,6 @@ export function Events() {
         ))}
         </div>
       </div>
-      <a className="btn btn--solid" href="#app/events">Open Events</a>
     </section>
   )
 }
@@ -249,7 +246,7 @@ export function Observatory() {
   const si = sst.data?.data.findLastIndex((v) => v != null) ?? -1
   const sNow = si >= 0 ? sst.data!.data[si]! : undefined, sClim = si >= 0 ? sst.data!.climatology.data[si] : undefined
   return (
-    <section id="observatory" data-section="observatory" className="sec sec--obs" aria-labelledby="h-obs">
+    <section className="sec sec--obs" aria-labelledby="h-obs">
       <div className="obs__head">
         <Eyebrow id="observatory" />
         <h2 id="h-obs" className="h2">Measured, not modelled.</h2>
@@ -287,7 +284,7 @@ export function Region() {
   const m = useData((s) => marine(LK.coast, 0, s), [])
   const t = daysAgo(2)
   return (
-    <section id="region" data-section="region" className="sec sec--region" aria-labelledby="h-region">
+    <section className="sec sec--region" aria-labelledby="h-region">
       <div className="sec__body">
         <Eyebrow id="region" />
         <h2 id="h-region" className="h2">Sri Lanka, from orbit and from the sea.</h2>
@@ -311,7 +308,7 @@ export function Region() {
 
 export function Sources() {
   return (
-    <section id="sources" data-section="sources" className="sec sec--sources" aria-labelledby="h-sources">
+    <section className="sec sec--sources" aria-labelledby="h-sources">
       <Eyebrow id="sources" />
       <h2 id="h-sources" className="h2">Where every number comes from.</h2>
       <p className="lead">POLARIS shows other people's measurements. These are the people, with their licences and what we use from each.</p>
@@ -328,4 +325,9 @@ export function Sources() {
       </ul>
     </section>
   )
+}
+
+/** The pages behind the header icons (Home is the hero, in each app shell). */
+export const PAGES: Record<Exclude<SectionId, 'home'>, () => React.JSX.Element> = {
+  explorer: Explorer, ocean: Ocean, monitor: Monitor, events: Events, observatory: Observatory, region: Region, sources: Sources,
 }

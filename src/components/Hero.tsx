@@ -13,26 +13,28 @@ const ll2v = (THREE: T3, lat: number, lon: number, r = 1) => {
   return new THREE.Vector3(-Math.cos(p) * Math.sin(t) * r, Math.cos(t) * r, Math.sin(p) * Math.sin(t) * r)
 }
 
-/** Where the sun is overhead right now. ponytail: ignores the equation of time (up to ~4° of longitude), fine for a hero shadow. */
-export function subsolar(d = new Date()) {
-  const day = (d.getTime() - Date.UTC(d.getUTCFullYear(), 0, 0)) / 864e5
-  const lat = -23.44 * Math.cos((2 * Math.PI / 365) * (day + 10))
-  const lon = -((d.getUTCHours() + d.getUTCMinutes() / 60) - 12) * 15
-  return { lat, lon }
-}
 export const fmtLL = (lat: number, lon: number) =>
   `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}  ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`
 
 const VERT = /* glsl */ `
 varying vec2 vUv; varying vec3 vN;
-void main() { vUv = uv; vN = normal; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`
+void main() { vUv = uv; vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`
+// Light-mode Earth: the Blue Marble's near-black ocean is lifted to a bright blue, land is brightened,
+// and a soft key light from the upper left gives the sphere its volume. No night side.
 const FRAG = /* glsl */ `
-uniform sampler2D day; uniform sampler2D night; uniform vec3 sun;
+uniform sampler2D day;
 varying vec2 vUv; varying vec3 vN;
 void main() {
-  float d = dot(normalize(vN), sun);
-  // night side keeps a trace of the day texture so continents still read under the city lights
-  vec3 c = mix(texture2D(night, vUv).rgb * 1.6 + texture2D(day, vUv).rgb * 0.26, texture2D(day, vUv).rgb, smoothstep(-0.12, 0.18, d));
+  vec3 t = texture2D(day, vUv).rgb;
+  float lum = dot(t, vec3(.299, .587, .114));
+  float sea = 1.0 - smoothstep(.03, .16, lum);
+  vec3 ocean = mix(vec3(.16, .46, .90), vec3(.30, .66, .98), vUv.y);
+  vec3 land = clamp(t * 1.55 + .10, 0., 1.);
+  land = mix(vec3(dot(land, vec3(.333))), land, 1.25);
+  vec3 c = mix(land, ocean, sea);
+  float lit = .74 + .34 * clamp(dot(vN, normalize(vec3(-.45, .55, .70))), 0., 1.);
+  c *= lit;
+  c = mix(c, vec3(.80, .91, 1.), pow(1. - clamp(vN.z, 0., 1.), 3.) * .55); // airy limb
   gl_FragColor = vec4(c, 1.0);
 }`
 const ATMO_V = /* glsl */ `
@@ -40,14 +42,14 @@ varying vec3 vN; varying vec3 vV;
 void main() { vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`
 const ATMO_F = /* glsl */ `
 varying vec3 vN; varying vec3 vV;
-void main() { float f = pow(1.0 - abs(dot(vN, vV)), 4.0); gl_FragColor = vec4(0.22, 0.78, 0.91, f * 0.32); }`
+void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); gl_FragColor = vec4(.42, .66, 1., f * .55); }`
 
 export type Marker = { lat: number; lon: number; color: string }
 type Opts = { onPoint?: (ll: { lat: number; lon: number } | null) => void; focus?: { lat: number; lon: number }; markers?: Marker[] }
 
 /**
- * The landing Earth: Blue Marble by day, Black Marble by night, the terminator where the sun really is now.
- * Drag to spin; it settles back to slow rotation. three.js loads after first paint.
+ * The landing Earth: a bright, light-mode Blue Marble and nothing else. Drag to spin; it settles back to slow rotation.
+ * three.js loads after first paint.
  */
 export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFail: () => void, opts: Opts = {}) {
   const o = useRef(opts)
@@ -72,64 +74,18 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
 
       const tex = new THREE.TextureLoader()
       const load = (u: string) => { const t = tex.load(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t }
-      const s = subsolar()
       const mat = new THREE.ShaderMaterial({
-        uniforms: { day: { value: load('/earth-day.jpg') }, night: { value: load('/earth-night.jpg') }, sun: { value: ll2v(THREE, s.lat, s.lon) } },
+        uniforms: { day: { value: load('/earth-day.jpg') } },
         vertexShader: VERT, fragmentShader: FRAG,
       })
       const earth = new THREE.Group()
       const globe = new THREE.Mesh(new THREE.SphereGeometry(1, small ? 64 : 128, small ? 32 : 64), mat)
       earth.add(globe)
 
-      // graticule every 30°: the scientific frame, kept faint
-      const g: number[] = []
-      for (let lat = -60; lat <= 60; lat += 30)
-        for (let lon = -180; lon < 180; lon += 4) g.push(...ll2v(THREE, lat, lon, 1.003).toArray(), ...ll2v(THREE, lat, lon + 4, 1.003).toArray())
-      for (let lon = -180; lon < 180; lon += 30)
-        for (let lat = -88; lat < 88; lat += 4) g.push(...ll2v(THREE, lat, lon, 1.003).toArray(), ...ll2v(THREE, lat + 4, lon, 1.003).toArray())
-      const grat = new THREE.BufferGeometry()
-      grat.setAttribute('position', new THREE.Float32BufferAttribute(g, 3))
-      earth.add(new THREE.LineSegments(grat, new THREE.LineBasicMaterial({ color: '#38c6e8', transparent: true, opacity: 0.14 })))
-
-      // featured region marker
       const f = o.current.focus
-      const pin = new THREE.Mesh(new THREE.RingGeometry(0.018, 0.026, 32), new THREE.MeshBasicMaterial({ color: '#38c6e8', side: THREE.DoubleSide }))
-      if (f) {
-        const p = ll2v(THREE, f.lat, f.lon, 1.006)
-        pin.position.copy(p)
-        pin.lookAt(p.clone().multiplyScalar(2))
-        earth.add(pin)
-      }
       scene.add(earth)
       scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.06, 64, 32),
         new THREE.ShaderMaterial({ vertexShader: ATMO_V, fragmentShader: ATMO_F, transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending })))
-
-      // the logo, in 3D: a tilted orbit with a travelling satellite, and the pole star above the planet
-      const orbit = new THREE.Group()
-      orbit.rotation.set(1.22, 0, -0.38)
-      const ring = new THREE.BufferGeometry().setFromPoints(new THREE.EllipseCurve(0, 0, 1.34, 1.34).getPoints(160).map((p) => new THREE.Vector3(p.x, p.y, 0)))
-      orbit.add(new THREE.LineLoop(ring, new THREE.LineBasicMaterial({ color: '#38c6e8', transparent: true, opacity: 0.5 })))
-      const sat = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), new THREE.MeshBasicMaterial({ color: '#dceaf2' }))
-      orbit.add(sat)
-      scene.add(orbit)
-      const starTex = (() => {
-        const c = document.createElement('canvas'); c.width = c.height = 128
-        const g = c.getContext('2d')!, r = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-        r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.08, 'rgba(220,234,242,.9)'); r.addColorStop(0.3, 'rgba(56,198,232,.12)'); r.addColorStop(1, 'rgba(56,198,232,0)')
-        g.fillStyle = r; g.fillRect(0, 0, 128, 128)
-        g.fillStyle = '#fff'; g.beginPath() // four-point star, as in the mark
-        g.moveTo(64, 2); g.lineTo(68, 60); g.lineTo(126, 64); g.lineTo(68, 68); g.lineTo(64, 126); g.lineTo(60, 68); g.lineTo(2, 64); g.lineTo(60, 60); g.fill()
-        return new THREE.CanvasTexture(c)
-      })()
-      const star = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
-      star.scale.setScalar(0.34)
-      star.position.set(0, 1.24, 0)
-      scene.add(star)
-      // faint fixed starfield far behind
-      const sf: number[] = []
-      for (let i = 0; i < 700; i++) { const v = new THREE.Vector3().randomDirection().multiplyScalar(18); if (v.z < 2) sf.push(v.x, v.y, v.z) }
-      const sfg = new THREE.BufferGeometry(); sfg.setAttribute('position', new THREE.Float32BufferAttribute(sf, 3))
-      scene.add(new THREE.Points(sfg, new THREE.PointsMaterial({ color: '#dceaf2', size: 0.035, transparent: true, opacity: 0.45 })))
 
       // live markers (EONET), rebuilt whenever the caller passes a new array
       let shown: Marker[] | undefined
@@ -155,7 +111,7 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
         const r = cv.parentElement!.getBoundingClientRect()
         renderer.setSize(r.width, r.height, false)
         cam.aspect = r.width / r.height
-        cam.position.z = r.width / r.height < 1 ? 5.6 / Math.max(0.62, r.width / r.height) : 5.6 // room for the orbit and the star
+        cam.position.z = r.width / r.height < 1 ? 5.6 / Math.max(0.62, r.width / r.height) : 5.6
         cam.updateProjectionMatrix()
       }
       size()
@@ -185,17 +141,11 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
       const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting))
       io.observe(cv)
       const still = reduced()
-      const t0 = performance.now()
       const frame = () => {
         if (!visible) return
         if (!dragging) { spin += vel; vel *= 0.94; if (!still) spin += 0.0006 }
         earth.rotation.y = spin
         syncMarkers()
-        const ts = (performance.now() - t0) / 1000
-        if (!still) { const a = ts * 0.12; sat.position.set(Math.cos(a) * 1.34, Math.sin(a) * 1.34, 0); star.material.rotation = Math.sin(ts * 0.4) * 0.06 }
-        const k = 1 + Math.sin((performance.now() - t0) / 500) * 0.25
-        pin.scale.setScalar(still ? 1 : k)
-        if (renderer.info.render.frame % 600 === 0) { const n = subsolar(); mat.uniforms.sun.value.copy(ll2v(THREE, n.lat, n.lon)) }
         renderer.render(scene, cam)
       }
       gsap.ticker.add(frame)
@@ -225,7 +175,6 @@ export default function Hero() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const [noGL, setNoGL] = useState(false)
   const [pt, setPt] = useState<{ lat: number; lon: number } | null>(null)
-  const sun = subsolar()
   const markers = useMarkers()
   useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
 
@@ -238,7 +187,7 @@ export default function Hero() {
   }, [])
 
   return (
-    <section id="home" data-section="home" className="hero" aria-label="POLARIS">
+    <section className="hero" aria-label="POLARIS">
       <div className="hero__copy">
         <h1 className="hero__word"><img src="/brand/wordmark.png" alt="POLARIS" width={606} height={63} fetchPriority="high" /></h1>
         <p className="hero__stmt">An open window into our planet.</p>
@@ -255,7 +204,6 @@ export default function Hero() {
         <figcaption className="readout" aria-live="off">
           <span>{pt ? fmtLL(pt.lat, pt.lon) : 'Drag to rotate'}</span>
           {markers.list && <span className="legendline"><i className="swatch" style={{ background: '#d95926' }} /> {markers.open} natural events open now (NASA EONET)</span>}
-          <span className="muted">Sun overhead near {fmtLL(sun.lat, sun.lon)}</span>
         </figcaption>
       </figure>
     </section>

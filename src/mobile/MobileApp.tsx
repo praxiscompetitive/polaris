@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { reduced, useReveal } from '../motion'
-import { SECTIONS, SectionId, set, useStore } from '../store'
-import Transition, { navigate, useSiteNav } from '../components/Transition'
+import { reduced } from '../motion'
+import { SECTIONS, useStore } from '../store'
+import Transition, { useSiteNav } from '../components/Transition'
 import Icon from '../components/Icons'
 import { fmtLL, useEarth, useMarkers } from '../components/Hero'
-import { Events, Explorer, LiveStrip, Monitor, Observatory, Ocean, Region, Sources } from '../components/Landing'
+import { LiveStrip, PAGES } from '../components/Landing'
 import MissionGate from '../components/MissionGate'
 import './mobile.css'
 
 /**
- * POLARIS for phones. Same data and sections as desktop, rebuilt for thumbs: native scroll only,
- * one bottom dock as navigation, and Mission views that keep one data overlay at a time.
+ * POLARIS for phones. Same pages as desktop, rebuilt for thumbs: one bottom dock of page icons,
+ * and Mission views that keep one data overlay at a time.
  */
 
 const cap = (s: string) => (s === s.toUpperCase() ? s[0] + s.slice(1).toLowerCase() : s)
@@ -22,7 +22,7 @@ function Hero() {
   const markers = useMarkers()
   useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
   return (
-    <section id="home" data-section="home" className="m-hero" aria-label="POLARIS">
+    <section className="m-hero" aria-label="POLARIS">
       <img className="m-hero__icon" src="/brand/icon-180.png" alt="" width={40} height={40} />
       <div className="m-hero__stage">
         {noGL
@@ -40,80 +40,33 @@ function Hero() {
   )
 }
 
-function Footer() {
-  return (
-    <footer className="m-foot">
-      <nav className="m-foot__links" aria-label="Footer">
-        {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`}>{cap(s.label)}</a>)}
-      </nav>
-      <p className="muted">POLARIS is an open-source project by Praxis, MIT licence. Data belongs to its providers.</p>
-    </footer>
-  )
-}
-
-/** The orb, docked where the thumb is. Opens a native modal sheet: focus trap, Esc and backdrop for free. */
+/** One bar, bottom, where the thumb is: an icon per page. */
 function Dock() {
   const { current } = useStore()
-  const sheet = useRef<HTMLDialogElement>(null)
-  const label = SECTIONS.find((s) => s.id === current)!.label
-
-  const go = (e: React.MouseEvent, id: SectionId) => {
-    e.preventDefault()
-    const r = e.currentTarget.getBoundingClientRect()
-    sheet.current!.close()
-    navigate(id, { x: r.left + 32, y: r.top + r.height / 2 })
-  }
-
   return (
-    <>
-      <nav className="m-dock" aria-label="Primary">
-        <span className="m-dock__label mono">{cap(label)}</span>
-        <span className="m-dock__bar" aria-hidden="true"><i /></span>
-        <button className="m-dock__orb" aria-haspopup="dialog" aria-label="Open navigation" onClick={() => sheet.current!.showModal()}>
-          <span className="orb__shell" />
-          <span className="orb__core" />
-        </button>
-      </nav>
-      <dialog ref={sheet} className="m-sheet" aria-label="Sections" onClick={(e) => e.target === sheet.current && sheet.current.close()}>
-        <ul>
-          {SECTIONS.map((s) => (
-            <li key={s.id}>
-              <a href={`#${s.id}`} aria-current={current === s.id ? 'location' : undefined} onClick={(e) => go(e, s.id)}>
-                <span className="m-sheet__ic"><Icon id={s.id} /></span>
-                <b>{cap(s.label)}</b>
-                <span>{s.blurb}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <button className="m-sheet__close mono" onClick={() => sheet.current!.close()}>Close</button>
-      </dialog>
-    </>
+    <nav className="m-dock" aria-label="Pages">
+      {SECTIONS.map((s) => (
+        <a key={s.id} href={`#${s.id}`} aria-label={cap(s.label)} aria-current={current === s.id ? 'page' : undefined}>
+          <Icon id={s.id} size={22} />
+        </a>
+      ))}
+    </nav>
   )
 }
 
 export default function MobileApp() {
-  useEffect(() => {
-    document.documentElement.classList.toggle('reduce', reduced())
-    set({})
-  }, [])
+  useEffect(() => { document.documentElement.classList.toggle('reduce', reduced()) }, [])
   useSiteNav()
-  useReveal()
+  const { current } = useStore()
+  const Page = current === 'home' ? null : PAGES[current]
 
   return (
     <div className="m">
-      <main>
-        <Hero />
-        <LiveStrip />
-        <Explorer />
-        <Ocean />
-        <Monitor />
-        <Events />
-        <Observatory />
-        <Region />
-        <Sources />
+      <main className="stage" data-page={current}>
+        <div className="page" key={current}>
+          {Page ? <Page /> : <><Hero /><LiveStrip /></>}
+        </div>
       </main>
-      <Footer />
       <Dock />
       <Transition />
       <MissionGate mobile />

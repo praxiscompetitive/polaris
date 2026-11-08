@@ -6,6 +6,7 @@ import { source } from '../data/sources'
 import { marine, weather } from '../data/feeds'
 import { Cam, Link, serialize, View, VIEWS } from '../lib/deeplink'
 import { fmtLL } from '../components/Hero'
+import { go, originOf } from '../components/Transition'
 import Globe, { Cesium, Stack } from './Globe'
 import LayerPanel from './views/Layers'
 import Monitor from './views/Monitor'
@@ -102,8 +103,9 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
     return () => { page.inert = false; removeEventListener('keydown', key) }
   }, [])
 
-  const close = () => { location.hash = `#${stRef.current.view}` }
-  const tab = (v: View) => { location.hash = serialize({ view: v, l: [] }) }
+  // the same circular transition as the pages: closing, and moving between views
+  const close = (o?: { x: number; y: number }) => go(() => { location.hash = `#${stRef.current.view}` }, TITLES[stRef.current.view].toUpperCase(), o ?? { x: 60, y: 28 })
+  const tab = (v: View, o: { x: number; y: number }) => go(() => { location.hash = serialize({ view: v, l: [] }) }, TITLES[v].toUpperCase(), o)
   const share = async () => {
     try { await navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1600) } catch { prompt('Copy this link', location.href) }
   }
@@ -134,9 +136,9 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
         onReady={setViewer} onCamera={(c) => setSt((s) => ({ ...s, c }))} onPick={onPick} />
 
       <header className="mbar">
-        <button className="mbar__back" onClick={close} aria-label="Close and return to the overview"><ArrowLeft size={18} /><img src="/brand/icon-180.png" alt="" width={26} height={26} /><span>POLARIS</span></button>
+        <button className="mbar__back" onClick={(e) => close(originOf(e.currentTarget))} aria-label="Close and return to the overview"><ArrowLeft size={18} /><img src="/brand/icon-180.png" alt="" width={26} height={26} /><span>POLARIS</span></button>
         <nav className="mbar__tabs" aria-label="Views">
-          {VIEWS.map((v) => <button key={v} aria-current={st.view === v ? 'page' : undefined} onClick={() => tab(v)}>{TITLES[v]}</button>)}
+          {VIEWS.map((v) => <button key={v} aria-current={st.view === v ? 'page' : undefined} onClick={(e) => tab(v, originOf(e.currentTarget))}>{TITLES[v]}</button>)}
         </nav>
         <button className="mbar__share" onClick={share} aria-live="polite">{copied ? <><Check size={16} /> Copied</> : <><LinkSimple size={16} /> Share view</>}</button>
       </header>
