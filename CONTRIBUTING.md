@@ -1,7 +1,6 @@
 # Contributing to POLARIS
 
-Thanks for helping. POLARIS is open source (MIT) and welcomes contributions of every size: a typo, a new layer, a whole
-region report. By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Thanks for helping. POLARIS is open source (MIT) and welcomes contributions of every size: a typo, a new layer, a whole region report. By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting started
 
@@ -51,9 +50,7 @@ A maintainer will review. We may ask for changes; that is normal and not a judge
   res: '500 m', period: 'Daily', method: 'MODIS normalised difference snow index.' }
 ```
 
-- **GIBS layers:** take `ref`, the tile matrix set level (`max`, from `GoogleMapsCompatible_Level<max>`), the format and
-  the first date from `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml`. The legend file
-  name is in the same document (`legends/<name>_H.svg`). Do not guess these; a wrong level returns HTTP 400 for every
+- **GIBS layers:** take `ref`, the tile matrix set level (`max`, from `GoogleMapsCompatible_Level<max>`), the format and the first date from `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml`. The legend file name is in the same document (`legends/<name>_H.svg`). Do not guess these; a wrong level returns HTTP 400 for every
   tile.
 - **Other tile servers:** `kind: 'xyz'` with a `{z}/{x}/{y}` template, or extend `tileUrl()` for a new protocol.
 - `overlay: false` makes it a base layer (radio button). `from`/`step` make it temporal (date picker, Monitor).
@@ -62,8 +59,7 @@ That is all: Explorer, Ocean, Monitor, legends and the Sources page read the reg
 
 ## Adding a region
 
-Add an object to `REGIONS` in `src/data/regions.ts`: camera, offshore sample points (Open-Meteo Marine only answers over
-water), inland points, relevant layers and "where to look" items with dates. Open it with `#app/region?r=<id>`.
+Add an object to `REGIONS` in `src/data/regions.ts`: camera, offshore sample points (Open-Meteo Marine only answers over water), inland points, relevant layers and "where to look" items with dates. Open it with `#app/region?r=<id>`.
 
 ## Code guidelines
 
