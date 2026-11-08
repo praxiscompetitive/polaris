@@ -2,6 +2,29 @@
   "name": "praxis-site",
   "private": true,
   "version": "0.1.0",
+  "description": "POLARIS: an open window into our planet. Real satellite, ocean and climate data on a live 3D globe.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/praxiscompetitive/polaris.git"
+  },
+  "homepage": "https://github.com/praxiscompetitive/polaris#readme",
+  "bugs": {
+    "url": "https://github.com/praxiscompetitive/polaris/issues"
+  },
+  "keywords": [
+    "earth-observation",
+    "satellite",
+    "climate",
+    "remote-sensing",
+    "cesium",
+    "threejs",
+    "nasa-gibs",
+    "open-data"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
