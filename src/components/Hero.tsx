@@ -16,21 +16,23 @@ const ll2v = (THREE: T3, lat: number, lon: number, r = 1) => {
 export const fmtLL = (lat: number, lon: number) =>
   `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}  ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`
 
+const ATMO_V = /* glsl */ `
+varying vec3 vN; varying vec3 vV;
+void main() { vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`
+const ATMO_F = /* glsl */ `
+varying vec3 vN; varying vec3 vV;
+void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); gl_FragColor = vec4(.42, .66, 1., f * .55); }`
+
 const VERT = /* glsl */ `
 varying vec2 vUv; varying vec3 vN;
 void main() { vUv = uv; vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`
-// Light-mode Earth: the Blue Marble's near-black ocean is lifted to a bright blue, land is brightened,
-// and a soft key light from the upper left gives the sphere its volume. No night side.
+// Light-mode Earth: the Blue Marble, lifted for a light page, with a soft key light from the upper left gives the sphere its volume. No night side.
 const FRAG = /* glsl */ `
 uniform sampler2D day;
 varying vec2 vUv; varying vec3 vN;
 void main() {
   vec3 t = texture2D(day, vUv).rgb;
-  float sea = smoothstep(1.0, 1.8, t.b / (max(t.r, t.g) + .0005)); // the Blue Marble's ocean is navy; land is never blue-dominant, however dark
-  vec3 ocean = mix(vec3(.16, .46, .90), vec3(.30, .66, .98), vUv.y);
-  vec3 land = clamp(pow(t, vec3(.62)) * 1.25, 0., 1.);
-  land = mix(vec3(dot(land, vec3(.333))), land, 1.25);
-  vec3 c = mix(land, ocean, sea);
+  vec3 c = clamp(pow(t, vec3(.62)) * 1.25, 0., 1.); // the Blue Marble's own colours, just lifted for a light page
   float lit = .74 + .34 * clamp(dot(vN, normalize(vec3(-.45, .55, .70))), 0., 1.);
   c *= lit;
   gl_FragColor = vec4(c, 1.0);
@@ -76,6 +78,8 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
 
       const f = o.current.focus
       scene.add(earth)
+      scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.06, 64, 32),
+        new THREE.ShaderMaterial({ vertexShader: ATMO_V, fragmentShader: ATMO_F, transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending })))
 
       // live markers (EONET), rebuilt whenever the caller passes a new array
       let shown: Marker[] | undefined

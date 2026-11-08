@@ -86,7 +86,7 @@ section { position: relative; }
 .hero__sub { color: var(--mute); max-width: 40ch; font-size: 18px; }
 .hero__row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
 .hero__stage { position: relative; aspect-ratio: 1; width: min(100%, calc(100dvh - 68px - 90px)); justify-self: center; } /* header, ticker and padding */
-.hero__canvas, .hero__fallback { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+.hero__canvas, .hero__fallback { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; filter: drop-shadow(0 26px 34px rgb(47 85 232 / .3)); }
 .hero__fallback { object-fit: contain; }
 .hero__canvas:active { cursor: grabbing; }
 .readout { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 2px; font: 12px var(--mono); color: var(--mute); pointer-events: none; }
