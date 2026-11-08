@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import type * as ThreeNS from 'three'
 type T3 = typeof ThreeNS
 import { EASE, isSmall, reduced } from '../motion'
-import { eonet } from '../data/feeds'
-import { useData } from '../lib/api'
 
 const RAD = Math.PI / 180
 /** lat/lon → point on three's SphereGeometry (u = 0 at 180°W). */
@@ -159,20 +157,10 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
   }, [])
 }
 
-/** Open EONET events as hero markers: wildfires, storms, volcanoes, floods, other. Colours match the Events view. */
-const EV_COLOR: Record<string, string> = { wildfires: '#d95926', floods: '#199e70', severeStorms: '#c98500', volcanoes: '#d55181' }
-export function useMarkers() {
-  const d = useData((s) => eonet(30, s), [])
-  const open = d.data?.filter((e) => !e.closed)
-  const list = useMemo(() => open?.map((e) => ({ lat: e.lat, lon: e.lon, color: EV_COLOR[e.cat] ?? '#2399ba' })), [d.data])
-  return { list, open: open && new Set(open.map((e) => e.id)).size }
-}
-
 export default function Hero() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const [noGL, setNoGL] = useState(false)
-  const markers = useMarkers()
-  useEarth(canvas, () => setNoGL(true), { focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
+  useEarth(canvas, () => setNoGL(true), { focus: { lat: 7.8, lon: 80.7 } })
 
   useEffect(() => {
     // context.revert() restores the elements, so a remount (React strict mode) animates from the real start, not from hidden
