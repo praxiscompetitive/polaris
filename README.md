@@ -53,6 +53,18 @@ Both variables are optional. Copy `.env.example` to `.env` for local use.
 | `VITE_CESIUM_TOKEN` | build | Cesium World Terrain (real relief). Without it the globe is a smooth ellipsoid. |
 | `FIRMS_MAP_KEY` | server | NASA FIRMS fire hotspots. Without it those panels say "not configured". [Free key](https://firms.modaps.eosdis.nasa.gov/api/map_key/). |
 
+## Rate limits and keys
+
+- **FIRMS key (server):** NASA allows 5000 requests per 10 minutes per key. Every function in `api/` goes through
+  `api/_guard.ts`: responses are cached at the CDN (`s-maxage`) and in memory, concurrent requests share one upstream
+  call, each instance makes at most 12 upstream calls per 10 minutes (stale data is served beyond that), and each client
+  is limited to 30 requests per minute (HTTP 429). Limits are per function instance; for a hard global limit move the
+  counters to Vercel KV or Upstash.
+- **Cesium token (browser):** it ships in the bundle, so it cannot be limited in code. In the
+  [Cesium ion dashboard](https://ion.cesium.com/tokens), restrict the token to the *assets:read* scope, to the World
+  Terrain asset only, and to your site's domain under *Allowed URLs*. Terrain only loads when a map view opens.
+- Keyless sources (GIBS, EONET, USGS, Open-Meteo, NOAA) are called from the browser, with a per-session request cache.
+
 ## Map links
 
 Every map view lives in the URL hash:

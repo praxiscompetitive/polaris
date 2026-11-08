@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import { setDefaultResultOrder } from 'node:dns'
@@ -9,6 +9,7 @@ const CESIUM = 'node_modules/cesium/Build/Cesium'
 const devApi = (): Plugin => ({
   name: 'polaris-dev-api',
   configureServer(server) {
+    for (const [k, v] of Object.entries(loadEnv(server.config.mode, process.cwd(), ''))) process.env[k] ??= v // .env reaches api/*.ts in dev, as Vercel's settings do in production
     setDefaultResultOrder('ipv4first') // some local networks advertise IPv6 routes that time out (NASA GISS did)
     server.middlewares.use(async (req, res, next) => {
       const m = req.url?.match(/^\/api\/([\w-]+)/)

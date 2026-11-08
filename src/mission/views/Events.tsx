@@ -74,7 +74,7 @@ export default function Events({ viewer, fly }: VP) {
   const qs = useMemo(() => (off.has('earthquakes') ? [] : (eq.data ?? []).filter((q) => q.time >= start && q.time <= cut)), [eq.data, cut, off])
   const pts = useMemo<Pt[]>(() => [
     ...(!off.has('wildfires') && upto === days ? (fi.data?.pts ?? []).map(([lat, lon, frp]) => ({ lat, lon, color: colorOf('wildfires'), size: 3,
-      id: { kind: 'fire' as const, title: 'Active fire detection', sub: `Fire radiative power ${frp} MW`, src: 'NASA FIRMS, VIIRS S-NPP, last 24 h' } })) : []),
+      id: { kind: 'fire' as const, title: 'Active fire detection', sub: `Fire radiative power ${frp} MW`, src: 'NASA FIRMS, VIIRS NOAA-21, last 24 h' } })) : []),
     ...shown.map((e) => ({ lat: e.lat, lon: e.lon, color: colorOf(e.cat), size: 8, id: evPick(e) })),
     ...qs.map((q) => ({ lat: q.lat, lon: q.lon, color: colorOf('earthquakes'), size: Math.max(5, (q.mag - 2) * 4),
       id: { kind: 'quake' as const, title: `M${q.mag.toFixed(1)} ${q.place}`, sub: `Depth ${q.depth.toFixed(0)} km`, time: q.time, link: q.url, src: 'USGS' } })),

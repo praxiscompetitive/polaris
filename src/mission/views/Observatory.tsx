@@ -75,7 +75,7 @@ export default function Observatory() {
         </Card>
 
         <Card title="Active fires, last 24 hours" src="firms" period={fi.data ? `Since ${fi.data.start.slice(0, 16).replace('T', ' ')} UTC` : 'Rolling 24 hours'}
-          method="VIIRS S-NPP 375 m thermal anomalies, nominal and high confidence only.">
+          method="VIIRS NOAA-21 375 m thermal anomalies, nominal and high confidence only.">
           {fi.data ? <p className="big">{fi.data.count.toLocaleString()} <small>detections worldwide</small></p>
             : fi.error === 'not-configured' ? <p className="note">Set FIRMS_MAP_KEY on the server to show this count.</p> : <Fail e={fi.error} />}
         </Card>

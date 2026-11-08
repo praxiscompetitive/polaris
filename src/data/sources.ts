@@ -9,7 +9,7 @@ export const SOURCES: Source[] = [
   { id: 'usgs', name: 'Earthquake Hazards real-time feeds', provider: 'U.S. Geological Survey', url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php',
     licence: 'U.S. public domain.', note: 'M2.5+ events worldwide, updated every minute by USGS.' },
   { id: 'firms', name: 'Fire Information for Resource Management System (FIRMS)', provider: 'NASA LANCE', url: 'https://firms.modaps.eosdis.nasa.gov/',
-    licence: 'NASA open data. Requires a free MAP_KEY.', note: 'VIIRS (S-NPP) 375 m active fire detections, last 24 hours, near real time.' },
+    licence: 'NASA open data. Requires a free MAP_KEY.', note: 'VIIRS (NOAA-21) 375 m active fire detections, last 24 hours, near real time.' },
   { id: 'gistemp', name: 'GISS Surface Temperature Analysis (GISTEMP v4)', provider: 'NASA Goddard Institute for Space Studies', url: 'https://data.giss.nasa.gov/gistemp/',
     licence: 'NASA open data. Cite GISTEMP Team and Lenssen et al. (2019).', note: 'Global land-ocean temperature index, anomaly relative to 1951-1980.' },
   { id: 'noaa-co2', name: 'Mauna Loa CO₂ monthly mean', provider: 'NOAA Global Monitoring Laboratory', url: 'https://gml.noaa.gov/ccgg/trends/',
