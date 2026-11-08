@@ -181,7 +181,7 @@ export default function Hero() {
           <a className="btn btn--solid" href="#app/explorer">Open the globe</a>
           <a className="btn" href="#region">Sri Lanka</a>
         </div>
-        <a className="hero__by mono" href="https://github.com/praxiscompetitive" target="_blank" rel="noopener">
+        <a className="hero__by mono" href="https://praxiscompetitive.site" target="_blank" rel="noopener">
           <span>Made by</span><img src="/brand/praxis.svg" alt="Praxis" width={96} height={25} />
         </a>
       </div>

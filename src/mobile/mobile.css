@@ -1,5 +1,9 @@
 /* ===== POLARIS for phones. Loaded only by the mobile tree. Fixed pages, bottom dock, no header. ===== */
-.m .page { inset: 0 0 calc(84px + env(safe-area-inset-bottom)) 0; }
+.m { --dock: calc(84px + env(safe-area-inset-bottom)); }
+/* the page runs full-height behind the floating dock; content is padded clear of it */
+.m .page { inset: 0; }
+.m .page--scroll { padding-bottom: var(--dock); }
+.m .page:not(.page--scroll) { padding-bottom: var(--dock); }
 /* phones scroll inside the page; the content is never scaled */
 .m .page--scroll { overflow: hidden auto; overscroll-behavior: contain; }
 .m .sec { padding: 20px 16px; gap: 16px; }
