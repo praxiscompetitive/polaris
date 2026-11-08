@@ -166,7 +166,7 @@ export default function Hero() {
   useEffect(() => {
     // context.revert() restores the elements, so a remount (React strict mode) animates from the real start, not from hidden
     const ctx = gsap.context(() => {
-      gsap.from('.hero__stmt, .hero__sub, .hero__row', { autoAlpha: 0, y: 16, duration: 0.9, stagger: 0.1, delay: 0.3, ease: EASE.out })
+      gsap.from('.hero__stmt, .hero__sub, .hero__row, .hero__by', { autoAlpha: 0, y: 16, duration: 0.9, stagger: 0.1, delay: 0.3, ease: EASE.out })
     })
     return () => ctx.revert()
   }, [])
@@ -181,6 +181,9 @@ export default function Hero() {
           <a className="btn btn--solid" href="#app/explorer">Open the globe</a>
           <a className="btn" href="#region">Sri Lanka</a>
         </div>
+        <a className="hero__by mono" href="https://github.com/praxiscompetitive" target="_blank" rel="noopener">
+          <span>Made by</span><img src="/brand/praxis.svg" alt="Praxis" width={96} height={25} />
+        </a>
       </div>
       <figure className="hero__stage">
         {noGL
