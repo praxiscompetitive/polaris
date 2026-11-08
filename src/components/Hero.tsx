@@ -105,7 +105,7 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
       }
 
       // start facing the featured region
-      let spin = f ? Math.PI / 2 - (f.lon + 180) * RAD : 0
+      let spin = Math.PI / 2 - ((f ? f.lon : 40) + 180) * RAD // no featured region: start over Africa and Asia
       earth.rotation.x = 0.28
       const size = () => {
         const r = cv.parentElement!.getBoundingClientRect()
@@ -143,7 +143,10 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
       const still = reduced()
       const frame = () => {
         if (!visible) return
-        if (!dragging) { spin += vel; vel *= 0.94; if (!still) spin += 0.0006 }
+        if (!dragging) { spin += vel; vel *= 0.94; if (!still) {
+          const lon = (((Math.PI / 2 - spin) / RAD - 180 + 540) % 360) - 180 // longitude facing the viewer
+          spin += Math.abs(lon) > 150 || lon < -100 ? 0.004 : 0.0006 // hurry across the empty Pacific
+        } }
         earth.rotation.y = spin
         syncMarkers()
         renderer.render(scene, cam)
