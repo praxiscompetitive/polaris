@@ -34,15 +34,8 @@ void main() {
   vec3 c = mix(land, ocean, sea);
   float lit = .74 + .34 * clamp(dot(vN, normalize(vec3(-.45, .55, .70))), 0., 1.);
   c *= lit;
-  c = mix(c, vec3(.80, .91, 1.), pow(1. - clamp(vN.z, 0., 1.), 4.) * .12); // airy limb
   gl_FragColor = vec4(c, 1.0);
 }`
-const ATMO_V = /* glsl */ `
-varying vec3 vN; varying vec3 vV;
-void main() { vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`
-const ATMO_F = /* glsl */ `
-varying vec3 vN; varying vec3 vV;
-void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); gl_FragColor = vec4(.42, .66, 1., f * .3); }`
 
 export type Marker = { lat: number; lon: number; color: string }
 type Opts = { onPoint?: (ll: { lat: number; lon: number } | null) => void; focus?: { lat: number; lon: number }; markers?: Marker[] }
@@ -84,8 +77,6 @@ export function useEarth(canvas: React.RefObject<HTMLCanvasElement | null>, onFa
 
       const f = o.current.focus
       scene.add(earth)
-      scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.06, 64, 32),
-        new THREE.ShaderMaterial({ vertexShader: ATMO_V, fragmentShader: ATMO_F, transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending })))
 
       // live markers (EONET), rebuilt whenever the caller passes a new array
       let shown: Marker[] | undefined
