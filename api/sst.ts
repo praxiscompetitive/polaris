@@ -1,4 +1,4 @@
-import { guarded } from './_guard'
+import { guarded } from './_guard.js'
 
 /** Daily world SST (60°S-60°N, NOAA OISST v2.1) from Climate Reanalyzer, which refuses requests without a browser UA. */
 const SRC = 'https://climatereanalyzer.org/clim/sst_daily/json_2clim/oisst2.1_world2_sst_day.json'

@@ -1,4 +1,4 @@
-import { guarded } from './_guard'
+import { guarded } from './_guard.js'
 
 /** NASA GISTEMP v4 global land-ocean index. The CSV has no CORS header, so it comes through here. */
 const SRC = 'https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv'

@@ -1,4 +1,4 @@
-import { guarded } from './_guard'
+import { guarded } from './_guard.js'
 
 /** NASA FIRMS VIIRS NOAA-21 active fires, last 24 h, worldwide. The map key stays server-side. */
 export async function GET(req: Request) {

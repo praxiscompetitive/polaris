@@ -1,4 +1,4 @@
-import { limited, memo } from './_guard'
+import { limited, memo } from './_guard.js'
 
 /**
  * OpenWeatherMap weather map tiles, proxied so the API key never reaches the browser.
