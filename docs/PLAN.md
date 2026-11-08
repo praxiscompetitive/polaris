@@ -1,160 +1,166 @@
-# POLARIS — build plan
+# POLARIS: plan v2
 
-> **Status (2026-11-08): phases 1-5 built and verified** (desktop 1440×900 and phone 390×760, scripted in Edge: every view opens,
-> deep links survive reload, Esc/back/terminal routing work, zero console errors). Deviations from the plan are marked *Changed*.
-
-> **POLARIS — An open window into our planet.**
-> An open-source Earth observation platform by Praxis. Real scientific data, no backend server.
+> **POLARIS: Open Earth Intelligence.** *Explore. Investigate. Understand.*
+> An open-source Earth science platform by Praxis. Real scientific data, no accounts, no backend server.
 > Hosted on Vercel: static site plus a few serverless `/api` functions.
+
+**Status (2026-11-08):** v0 (the Earth observation viewer) is built and live. This plan covers v1: turning it into a research and teaching platform.
+The v0 plan is kept at the bottom as history.
 
 ## Decisions (locked)
 
 | Topic | Decision |
 |---|---|
-| Codebase | Build on this repo. Keep Vite, React 19, TS, GSAP and three.js, plus the separate mobile tree (`src/main.tsx` split). |
-| Praxis content | Replaced. Praxis stays as a credit ("an open-source project by Praxis") in the footer and on the About block. |
-| Structure | A scrolling landing page (Orb nav, circular-mask transitions) introduces five experiences. Each opens a full-screen **Mission view**: a Cesium globe plus panels. |
-| Globe | CesiumJS on desktop and mobile (mobile gets a lighter config). It loads lazily, only when a Mission view opens. |
-| Hero | Lightweight three.js Earth: Blue Marble texture, atmosphere, cyan graticule, pointer-reactive. No Cesium on the landing page. |
-| Terrain | Cesium World Terrain when `VITE_CESIUM_TOKEN` is set. Otherwise a smooth ellipsoid. Never a hard failure. |
-| Data access | Browser-direct where CORS allows (GIBS, EONET, USGS). Vercel functions for blocked or keyed sources (GISTEMP, NOAA CO₂, FIRMS, ERDDAP, Climate Reanalyzer). |
-| Palette | Midnight `#071526` · Deep Blue `#123456` · Electric Cyan `#38C6E8` · Ice `#DCEAF2` · Steel `#8799A8`. Dark only. |
-| Type | Existing display face for headlines, a mono face for coordinates, units and readouts. |
-| Events | EONET base, plus USGS earthquakes, NASA FIRMS hotspots and a timeline scrubber. |
-| Extras | Sri Lanka featured region, compare slider, Sources & methodology page, shareable deep links. |
-| OSS | MIT LICENSE, README, `git init`, `vercel.json`, layer-registry contributor docs. |
+| Audience | University students and lecturers. Rigour (provenance, exports) and guided learning matter more than spectacle. |
+| Product | An open Earth science platform. **Geology and oceanography first**, other areas (atmosphere, hydrology, environment) added later. |
+| v1 success | An **investigation workbench** (the Lab) that handles a real cross-domain study end to end. |
+| Test case | **The 2004 Indian Ocean tsunami.** Earthquake, plate boundary, trench bathymetry, aftershocks over time, affected coasts including Sri Lanka. It becomes the first Academy practical. |
+| Backend | Static site plus serverless functions. **No accounts.** |
+| Saving and sharing | A deep link (extends `deeplink.ts`) plus an exportable and re-importable **JSON file**. |
+| Source failures | The layer stays listed with a visible **live / degraded / down** badge and a clear message. |
+| Look | **Keep the current visual identity** (the design tokens in `styles.css`). The navy/cyan palette is at most an accent for the Lab. |
+| Navigation | Four doors: **Explore, Lab, Academy, Library**. Domains (Ocean, Geology, …) are filters inside them, not separate sections. |
+| Existing views | Fold into the new doors (see Phase 6). |
+| Growth | Each science area is a self-contained **domain bundle**, so adding one later is mostly data. |
+| Deep time | **Out of v1** (no GPlates-style reconstruction). The time model must leave room for a geological-time axis. |
+| Lab tools | Filter by magnitude/time · time series at a point · transect/cross-section · area statistics · layer comparison/swipe. |
+| Extras | CSV + GeoJSON export · data cards with provenance · print-ready investigation report. |
+| Positioning | Complementary to Copernicus, Macrostrat, USGS, NASA Worldview and GPlates, not a replacement. The gap is one cross-domain workspace with teaching built in. |
 
 ## Architecture
 
-```
-src/
-  main.tsx                 desktop/mobile split (unchanged)
-  store.ts                 SECTIONS → POLARIS sections; + mission state
-  motion.ts                unchanged
-  styles.css               re-skinned to POLARIS tokens
-  data/
-    layers.ts              LAYER REGISTRY: one object per dataset (see "Layer registry")
-    sources.ts             provider, licence, citation, URL: one entry per source
-    regions.ts             featured regions (Sri Lanka first)
-  lib/
-    deeplink.ts            parse/serialize #app/<view>?l=&t=&c=&cmp=  (+ deeplink.test.ts)
-    csv.ts                 tiny CSV parser for GISTEMP/CO₂/FIRMS   (+ csv.test.ts)
-    api.ts                 fetch helpers with timeout, abort, error states
-  components/              existing: Orb, Transition, Cursor, Kinetic, Icons, Footer (terminal)
-    Hero.tsx               gyroscope → three.js Earth
-    Experiences.tsx        landing section per experience (replaces About/Services/Projects/Process)
-    Region.tsx             landing teaser for INDIAN OCEAN / SRI LANKA
-    Sources.tsx            sources & methodology (replaces Proof ledger)
-  mission/                 lazy chunk: everything that imports Cesium
-    Mission.tsx            full-screen shell: top bar, layer panel, legend, readout, date, share
-    Globe.tsx              Cesium Viewer wrapper (no default widgets), imagery/terrain/entities
-    views/Explorer.tsx
-    views/Ocean.tsx
-    views/Monitor.tsx      compare slider = Cesium ImageryLayer.splitDirection + scene.splitPosition
-    views/Events.tsx       EONET + USGS + FIRMS + timeline scrubber
-    views/Observatory.tsx  stats dashboard (inline SVG charts, no chart lib)
-    views/Region.tsx       Sri Lanka report (globe flown to region + data cards)
-  mobile/
-    MobileApp.tsx          POLARIS landing for phones; reuses mission/ with mobile flags
-    mobile.css
-api/                       Vercel serverless functions (TS), each sets Cache-Control s-maxage
-  gistemp.ts  sst.ts  firms.ts
-  *Changed:* NOAA CO₂ sends CORS headers, so it is fetched from the browser. NOAA ERDDAP did not respond during the build,
-  so point readouts use Open-Meteo Marine/Forecast (CORS-friendly, labelled as model data) instead of /api/erddap.
-```
+1. **Domain bundles.** Each domain (`ocean`, `geology`) declares its layers, regions, sources and practicals. The app renders from these. A new domain is a new bundle, not new components.
+2. **One layer/dataset schema with provenance built in:**
+   - provider and dataset ID
+   - kind: `observed` · `satellite` · `modelled` · `event`
+   - spatial and temporal resolution, units
+   - latency class: `realtime` · `near-realtime` · `forecast` · `historical`
+   - known limitations
+   - status: `live` · `degraded` · `down`
 
-**Routing:** landing sections keep the current hash scheme (`#home`, `#explorer`, …). Mission views use
-`#app/<view>?l=<layer,layer>&t=<YYYY-MM-DD>&c=<lon,lat,height,heading,pitch>&cmp=<YYYY-MM-DD>`,
-the same pattern as the old `#projects/<slug>`. Back/forward, deep links and Esc-to-close work exactly like the old dossier.
+   Data cards, the Library page and printed reports all read from this schema.
+3. **Investigation state.** One serialisable object: region, time range and cursor, active layers, filters, selections, chart configs.
+   It serialises to the URL and to a JSON file. The Lab, Academy practicals and reports all read and write this object.
+4. **Time model.** An interval plus a cursor, generic enough to take a geological-time axis later.
 
-**Cesium in Vite:** add the `cesium` dependency, plus `vite-plugin-static-copy` (dev) to copy `Build/Cesium/{Workers,Assets,Widgets,ThirdParty}`.
-Set `CESIUM_BASE_URL`. Only `mission/` imports Cesium, so the landing chunk stays small.
+Everything else from v0 stays: Vite, React 19, TS, GSAP, three.js hero, lazy Cesium chunk, the separate mobile tree, Vercel functions with `s-maxage`.
 
-**New dependencies:** `cesium`, `vite-plugin-static-copy` (dev), `@vercel/node` types (dev). Nothing else. Charts are inline SVG and the compare slider is native Cesium.
+## To-do list
 
-## Layer registry
+Work one phase at a time. Tick items as they land. Each phase ends with its **Done when** check.
 
-A single file that contributors extend. Each entry:
+### Phase 0: Data spikes (1–2 days)
+Goal: find out which sources work from a browser before designing around them.
+For each: CORS, rate limits, licence, latency, whether it needs a key or a proxy function. Record results in `docs/SPIKES.md`.
+- [ ] USGS earthquakes (FDSN event API): query by magnitude, time and bounding box
+- [ ] Plate boundaries: pick a static GeoJSON source and licence
+- [ ] GEBCO bathymetry: tiles for display, and a way to **sample a depth profile along a line**
+- [ ] Macrostrat: API and vector tiles, and **coverage over Sri Lanka**
+- [ ] Faults dataset: source and licence
+- [ ] Tsunami / sea-level data: is there any usable open source for 2004?
+- [ ] Sea temperature time series at a point (ERDDAP or Open-Meteo Marine): confirm what works
+- [ ] Decide which sources need a serverless proxy
+- [ ] Cut or defer any source that fails
 
-```ts
-{
-  id: 'sst', title: 'Sea surface temperature', group: 'ocean',
-  source: 'nasa-gibs', provider: 'NASA JPL MUR via GIBS',
-  kind: 'wmts',                    // wmts | xyz | geojson | api
-  url: 'https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/{id}/default/{t}/{tms}/{z}/{y}/{x}.png',
-  gibsId: 'GHRSST_L4_MUR_Sea_Surface_Temperature', tms: '1km', format: 'png',
-  temporal: { from: '2002-06-01', step: 'day', latency: 2 },   // drives date picker + default date
-  legend: { unit: '°C', min: -2, max: 32, ramp: [...] },
-  resolution: '1 km', period: 'daily', method: 'L4 multi-sensor blended analysis',
-  licence: 'NASA open data', cite: '…',
-}
-```
+*Done when:* `SPIKES.md` lists every source as use / proxy / cut, and the tsunami case has data for every layer it needs.
 
-Planned layers. **GIBS IDs are verified against GetCapabilities in Phase 1**, and anything missing gets swapped for the closest equivalent and noted.
+### Phase 1: Foundation
+- [ ] Define the layer schema (types, including provenance fields and status)
+- [ ] Domain-bundle structure: `domains/ocean`, `domains/geology`, with a registry that merges them
+- [ ] Migrate the existing 23 layers into the `ocean` bundle (plus land/weather/hazard as context)
+- [ ] Data card panel: provider, dataset ID, kind badge, resolution, units, latency, limitations
+- [ ] Status badges (live / degraded / down) and a simple health check per source
+- [ ] Library page generated from the schema (replaces the Sources page)
+- [ ] Update `sources.ts` to the new provenance fields
+- [ ] Tests for schema validation and registry merging
 
-| Group | Layer | Source |
-|---|---|---|
-| Base | True colour (VIIRS SNPP / MODIS Terra), Blue Marble, Black Marble night lights | GIBS |
-| Land | NDVI 8-day, Land surface temp (day), Population density (GPW), Shaded relief / elevation | GIBS |
-| Land | Tree cover loss (Hansen/UMD) | Global Forest Watch tiles |
-| Ocean | SST (MUR), SST anomaly, Chlorophyll-a, Sea surface salinity (SMAP) | GIBS |
-| Ocean | Surface currents | Copernicus Marine WMTS (public); fallback is OSCAR via GIBS |
-| Events | Fire detections (VIIRS 375 m) imagery | GIBS |
-| Events | EONET events, USGS quakes, FIRMS hotspots | APIs (FIRMS via `/api/firms`) |
+*Done when:* every layer shows a data card, the Library lists them all from the registry, and `npm run build` and `npm test` pass.
 
-## Phases
+### Phase 2: Geology bundle
+- [ ] Earthquakes layer (USGS) with magnitude and time filters
+- [ ] Plate boundaries layer
+- [ ] Faults layer (if the spike allows)
+- [ ] Macrostrat geological units layer, with click-for-formation readout
+- [ ] Bathymetry and trenches (GEBCO display layer)
+- [ ] Data cards and status for each
+- [ ] Geology filter in Explore
 
-### Phase 1 — Foundation & the experience
-1. `git init`, `.gitignore`, MIT `LICENSE`, `vercel.json` (SPA rewrite + `/api`), `.env.example`
-   (`VITE_CESIUM_TOKEN`, `FIRMS_MAP_KEY`).
-2. Re-skin: POLARIS tokens in `styles.css`, Transition tints, Cursor and Orb colours, a mono readout style, and a new mark/favicon.
-3. `store.ts`: sections become `home · explorer · ocean · monitor · events · observatory · region · sources`, plus new icons in `Icons.tsx`.
-4. Hero: three.js Earth replaces the gyroscope, reusing the existing lazy-load and no-WebGL fallback. Live UTC clock and cursor lat/lon readout.
-5. Landing: one section per experience (what it shows, the key datasets, an "Enter" button that opens `#app/<view>`).
-   Remove About/Services/Projects/Process/Contact. Footer terminal is repurposed (`help`, `goto <view>`, `layers`, `sources`).
-6. Cesium wiring, `Globe.tsx`, `Mission.tsx` shell, `deeplink.ts` + test.
-7. **Explorer:** base imagery, land layers, opacity, date picker (respects each layer's temporal range), click-to-readout (lat/lon), search-free geographic nav (preset regions + coordinates input), share button.
-8. **EONET layer** on Explorer: open events, category icons, click for details plus source link.
+*Done when:* the tsunami case's layers all display in Explore with provenance, and a failing source shows its badge instead of breaking the page.
 
-*Done when:* the landing page renders, Explorer opens from it and from a pasted deep link, layers toggle, dates change imagery, `npm run build` passes, and the landing chunk does not include Cesium.
+### Phase 3: Lab core
+- [ ] Investigation state object, type definitions, and URL + JSON serialisation (with tests)
+- [ ] Lab layout: left (catalogue, region, time) · centre (globe) · right (data card, statistics) · bottom (charts)
+- [ ] Magnitude/time filtering for event layers
+- [ ] Time series at a point (click anywhere, get a chart)
+- [ ] Transect: draw a line, get a profile (seafloor depth across the Sunda trench)
+- [ ] Area statistics: draw a box or polygon, get counts and summaries
+- [ ] Layer comparison/swipe (two layers or two dates), reusing the existing compare mode
+- [ ] Chart component upgrades (axes, units, accessible data table)
+- [ ] **Run the tsunami investigation end to end** and fix what breaks
 
-### Phase 2 — Ocean & environmental change
-1. **Ocean Intelligence:** SST, SST anomaly, chlorophyll, salinity and currents. Defaults to the Indian Ocean camera. Legends with units.
-   Point readout of real SST values via `/api/erddap` (NOAA CoastWatch ERDDAP `jplMURSST41`).
-2. **Environmental Monitor:** compare slider (two dates of the same layer, or two layers), with presets for deforestation, urban growth (night lights), vegetation, wildfire scars and water bodies. Tree cover loss with a year filter.
+*Done when:* a user can reproduce the 2004 tsunami investigation from a blank Lab, save it, reload it from the link, and get the same view.
 
-*Done when:* the slider drags smoothly, both sides honour their dates, deep links restore `cmp`, and the ERDDAP readout returns a value or a clear "no data" state.
+### Phase 4: Export and reports
+- [ ] CSV export for any chart or selection (reuse `csv.ts`)
+- [ ] GeoJSON export for any spatial selection
+- [ ] Investigation JSON export and import
+- [ ] Print-ready report (print stylesheet): maps, charts, active layers with provenance, sources, date
+- [ ] Tests for export formats
 
-### Phase 3 — Natural events
-1. **Events view:** EONET (open plus closed within the window), USGS M2.5+ (day/week/month feeds), FIRMS 24 h hotspots via `/api/firms`.
-2. Timeline scrubber (`<input type="range">`, 7–365 days, with play/pause) that filters every event source by date.
-3. Filter by category, event list synced with the globe (click either one to fly there), counts per category.
+*Done when:* the tsunami investigation exports to CSV, GeoJSON and JSON, re-imports cleanly, and prints as a readable report with full citations.
 
-*Done when:* all three feeds load or show an explicit per-source error, and the scrubber filters with no frame drops at ~5k points (points are billboards or primitives, not DOM).
+### Phase 5: Academy
+- [ ] Practical format: research question, background, an investigation state, guided steps, discussion questions (stored as data files)
+- [ ] Academy page: list and open practicals into the Lab
+- [ ] Practical 1: the 2004 Indian Ocean tsunami
+- [ ] Convert the Sri Lanka "look" entries into practicals: monsoon chlorophyll, warm water around the island, green seasons, forest loss
+- [ ] Practical: earthquakes along plate boundaries (magnitude filter and spatial relationship)
+- [ ] Check each practical against the data it uses and note the limitations
 
-### Phase 4 — Observatory & Sri Lanka
-1. **Observatory:** global temperature anomaly (GISTEMP v4, monthly and annual), atmospheric CO₂ (NOAA Mauna Loa), daily global SST vs climatology (Climate Reanalyzer OISST),
-   current active-fire count (FIRMS) and open-event counts (EONET). Every card shows the **source, measurement period, methodology and last-updated time**. Inline SVG line charts with accessible data tables.
-2. **INDIAN OCEAN — SRI LANKA:** a fly-to plus a report covering coastal SST (ERDDAP time series), chlorophyll along the coast, NDVI, historical tree cover loss (GFW) and coastal observations.
-   Region data lives in `regions.ts`, so more regions are just data. Any figure that can't be fetched live is a **cited snapshot with its date**, never an unlabeled number.
-3. Landing Region teaser and Sources & methodology page (generated from `sources.ts` and `layers.ts`).
+*Done when:* at least 5 practicals open in the Lab with the right layers, dates and filters, and each can be completed using only the app.
 
-*Done when:* every number on screen traces to a source entry, and the functions return cached JSON with a sensible `s-maxage`.
+### Phase 6: Fold in the old views
+- [ ] Layers + Region → **Explore**
+- [ ] Monitor, Events, Observatory → live-data panels inside Explore/Lab
+- [ ] Region "looks" → Academy (done in Phase 5; remove the old copies)
+- [ ] Sources → Library (done in Phase 1; remove the old page)
+- [ ] Landing page: four doors (Explore, Lab, Academy, Library), new copy and tagline, and README / `package.json` text
+- [ ] Add Indian Ocean regions as data: Bay of Bengal, Arabian Sea, Maldives, Andaman Sea, Equatorial Indian Ocean
+- [ ] Update deep links, the footer terminal, and the nav (including mobile)
+- [ ] Remove dead code and unused routes
 
-### Phase 5 — Mobile, hardening, open source
-1. **Mobile tree:** POLARIS landing (swipe rails, dock and sheet nav, reused), Mission views with a bottom-sheet layer picker, a lower Cesium resolution scale, one overlay layer at a time, and touch camera controls. Cesium downloads only when a view opens.
-2. Accessibility: keyboard paths through panels, focus return on close, reduced-motion (no hero spin, instant camera flights), colour-blind-safe legends, data tables behind charts.
-3. Performance: chunk audit, request render mode in Cesium, tile request limits, `fetch` abort on view change.
-4. Docs: README (setup, env vars, deploy to Vercel, data attribution) and `CONTRIBUTING.md` / "Adding a layer" guide.
-5. Verification: Edge scripted run on desktop and at 390×760. Every view opens, deep links round-trip, and there are zero page errors.
+*Done when:* there are exactly four top-level destinations, no duplicate pages remain, and old deep links still redirect somewhere sensible.
 
-## Known risks / honesty notes
-- **GIBS layer IDs and tile matrix sets** change occasionally. They're verified in Phase 1, not assumed.
-- **Copernicus Marine** public WMTS availability has to be confirmed. If it's unavailable, currents come from GIBS OSCAR or are dropped (and noted).
-- **FIRMS** needs a free `FIRMS_MAP_KEY`. Without it the Events view shows FIRMS as "not configured" and the GIBS fire imagery layer still works.
-- **Imagery is pictures, not numbers.** Numeric readouts come only from ERDDAP/API sources, and the UI never derives values from tile colours.
-- **Sri Lanka forest-loss statistics:** the GFW data API needs a key. The default is a cited snapshot with its date, and live data becomes optional if you add a key.
-- Cesium is about 3 MB gz of assets. That's fine behind a lazy route, and it's the main mobile cost.
+### Phase 7: Mobile, hardening, release
+- [ ] Decide mobile scope for the Lab (default: desktop-first, read-only view on phones)
+- [ ] Mobile Explore, Academy and Library at 390×760
+- [ ] Accessibility: keyboard paths through the Lab, focus return, reduced motion, colour-blind-safe legends, data tables behind charts
+- [ ] Performance: chunk audit, request limits, abort fetches on view change
+- [ ] Scripted browser run on desktop and phone: every view opens, deep links round-trip, zero console errors
+- [ ] README, `CONTRIBUTING.md` and "Adding a domain bundle" guide
+- [ ] Deploy and check production endpoints
+
+*Done when:* the scripted run passes on both sizes and the contributor guide lets someone add a layer or a practical without asking.
+
+## Later (not v1)
+Atmosphere and hydrology bundles · geological-time reconstruction · biodiversity (OBIS, Paleobiology Database) · Argo and in-situ observations · fishing activity · community contribution model · lecturer publishing (needs a backend).
+
+## Risks
+- **Macrostrat coverage in Sri Lanka** is unconfirmed. The Phase 0 spike decides whether the Sri Lanka geology story works.
+- **Depth profiles in the browser:** needs a queryable bathymetry source. If GEBCO offers none, a small serverless function is required.
+- **Source reliability:** in the last full test, 5 layers were rate-limited and 5 returned 502. Status badges are the mitigation, not a cure.
+- **Scope:** the Lab is the product. If time runs short, cut Academy content before Lab tools.
+- **Imagery is pictures, not numbers.** Numeric readouts come only from data APIs, never from tile colours.
+- **Mobile Lab** is an open question until Phase 7.
 
 ## Out of scope (until asked)
-User accounts, our own raster processing (xarray/rasterio), PostGIS, MapLibre/deck.gl/ECharts, any languages other than English.
+User accounts, our own raster processing (xarray/rasterio), PostGIS, deep-time reconstruction, any language other than English.
+
+---
+
+# History: v0 plan (built)
+
+v0 delivered the landing page, the Cesium Mission views (Explorer, Ocean, Monitor, Events, Observatory, Region), deep links, the Sri Lanka region, and the mobile tree.
+Key v0 choices that still apply: browser-direct data where CORS allows; Vercel functions for blocked or keyed sources (GISTEMP, SST, FIRMS, OpenWeatherMap tiles);
+Open-Meteo Marine for point readouts because NOAA ERDDAP did not respond during the build; Cesium loaded lazily only when a Mission view opens.
+The full v0 text is in git history (`git log -- docs/PLAN.md`).
