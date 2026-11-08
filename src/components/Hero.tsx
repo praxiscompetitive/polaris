@@ -27,14 +27,14 @@ varying vec2 vUv; varying vec3 vN;
 void main() {
   vec3 t = texture2D(day, vUv).rgb;
   float lum = dot(t, vec3(.299, .587, .114));
-  float sea = 1.0 - smoothstep(.03, .16, lum);
+  float sea = 1.0 - smoothstep(.02, .09, lum);
   vec3 ocean = mix(vec3(.16, .46, .90), vec3(.30, .66, .98), vUv.y);
   vec3 land = clamp(t * 1.55 + .10, 0., 1.);
   land = mix(vec3(dot(land, vec3(.333))), land, 1.25);
   vec3 c = mix(land, ocean, sea);
   float lit = .74 + .34 * clamp(dot(vN, normalize(vec3(-.45, .55, .70))), 0., 1.);
   c *= lit;
-  c = mix(c, vec3(.80, .91, 1.), pow(1. - clamp(vN.z, 0., 1.), 3.) * .55); // airy limb
+  c = mix(c, vec3(.80, .91, 1.), pow(1. - clamp(vN.z, 0., 1.), 4.) * .12); // airy limb
   gl_FragColor = vec4(c, 1.0);
 }`
 const ATMO_V = /* glsl */ `
@@ -42,7 +42,7 @@ varying vec3 vN; varying vec3 vV;
 void main() { vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`
 const ATMO_F = /* glsl */ `
 varying vec3 vN; varying vec3 vV;
-void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); gl_FragColor = vec4(.42, .66, 1., f * .55); }`
+void main() { float f = pow(1.0 - abs(dot(vN, vV)), 3.0); gl_FragColor = vec4(.42, .66, 1., f * .3); }`
 
 export type Marker = { lat: number; lon: number; color: string }
 type Opts = { onPoint?: (ll: { lat: number; lon: number } | null) => void; focus?: { lat: number; lon: number }; markers?: Marker[] }
