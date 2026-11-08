@@ -3,7 +3,7 @@
  * To add a layer, see CONTRIBUTING.md. GIBS ids, tile matrix sets and start dates were checked against
  * https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml (Nov 2026).
  */
-export type Group = 'base' | 'land' | 'ocean' | 'hazard' | 'reference'
+export type Group = 'base' | 'land' | 'ocean' | 'weather' | 'hazard' | 'reference'
 export type Layer = {
   id: string
   title: string
@@ -68,6 +68,18 @@ export const LAYERS: Layer[] = [
     legend: `https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetLegend&LAYER=${encodeURIComponent(CMEMS_CUR)}&STYLE=${encodeURIComponent('cmap:speed,vectorStyle:solidAndVector')}&FORMAT=image%2Fsvg%2Bxml`,
     res: '1/12° (~9 km)', period: 'Daily mean, latest analysis', method: 'NEMO ocean model with data assimilation. Model output, not observation.' },
 
+  // weather: OpenWeatherMap tiles, proxied by api/owm.ts so the key stays on the server
+  { id: 'clouds', title: 'Clouds', group: 'weather', src: 'owm', kind: 'xyz', ref: '/api/owm?l=clouds_new&z={z}&x={x}&y={y}', max: 8, overlay: true,
+    res: '~10 km', period: 'Current, about every 10 min', method: 'Cloud cover, percent. Model analysis, not a satellite image.' },
+  { id: 'rain', title: 'Precipitation', group: 'weather', src: 'owm', kind: 'xyz', ref: '/api/owm?l=precipitation_new&z={z}&x={x}&y={y}', max: 8, overlay: true,
+    res: '~10 km', period: 'Current, about every 10 min', method: 'Precipitation rate, mm per hour. Model analysis.' },
+  { id: 'wind', title: 'Wind speed', group: 'weather', src: 'owm', kind: 'xyz', ref: '/api/owm?l=wind_new&z={z}&x={x}&y={y}', max: 8, overlay: true,
+    res: '~10 km', period: 'Current, about every 10 min', method: 'Wind speed at 10 m, metres per second. Model analysis.' },
+  { id: 'airtemp', title: 'Air temperature', group: 'weather', src: 'owm', kind: 'xyz', ref: '/api/owm?l=temp_new&z={z}&x={x}&y={y}', max: 8, overlay: true,
+    res: '~10 km', period: 'Current, about every 10 min', method: 'Air temperature at 2 m, degrees Celsius. Model analysis.' },
+  { id: 'pressure', title: 'Sea-level pressure', group: 'weather', src: 'owm', kind: 'xyz', ref: '/api/owm?l=pressure_new&z={z}&x={x}&y={y}', max: 8, overlay: true,
+    res: '~10 km', period: 'Current, about every 10 min', method: 'Pressure reduced to sea level, hectopascals. Model analysis.' },
+
   // hazards
   { id: 'flood', title: 'Flood (MODIS 2-day)', group: 'hazard', src: 'gibs', kind: 'gibs', ref: 'MODIS_Combined_Flood_2-Day', ext: 'png', max: 9, overlay: true,
     from: '2021-01-01', step: 'P1D', legend: LEG('MODIS_Flood'), res: '250 m', period: '2-day composite', method: 'Surface water beyond the reference water mask (LANCE NRT).' },
@@ -81,7 +93,7 @@ export const LAYERS: Layer[] = [
 
 export const layer = (id: string) => LAYERS.find((l) => l.id === id)
 export const GROUPS: { id: Group; title: string }[] = [
-  { id: 'base', title: 'Base imagery' }, { id: 'land', title: 'Land' }, { id: 'ocean', title: 'Ocean' },
+  { id: 'base', title: 'Base imagery' }, { id: 'land', title: 'Land' }, { id: 'ocean', title: 'Ocean' }, { id: 'weather', title: 'Weather' },
   { id: 'hazard', title: 'Hazards' }, { id: 'reference', title: 'Reference' },
 ]
 
@@ -108,6 +120,8 @@ export function tileUrl(l: Layer, t?: string) {
     return `https://wmts.marine.copernicus.eu/teroWmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${encodeURIComponent(l.ref)}` +
       `&STYLE=${encodeURIComponent('cmap:speed,vectorStyle:solidAndVector')}&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png`
   const tms = `GoogleMapsCompatible_Level${l.max}`
-  // no date chosen: GIBS's own 'default' is its newest complete image (today-2 can sit past the last 8/16-day composite)
-  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${l.ref}/default/${(t && clampDate(l, t)) || 'default'}/${tms}/{z}/{y}/{x}.${l.ext}`
+  // no date chosen: daily layers ask for the latest complete day (GIBS's 'default' is today, still being assembled, and returns blank
+  // tiles); composites keep 'default', the newest finished composite (today-2 can sit past the last 8/16-day one)
+  const when = (t && clampDate(l, t)) || (l.step === 'P1D' ? latest(l) : 'default')
+  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${l.ref}/default/${when}/${tms}/{z}/{y}/{x}.${l.ext}`
 }

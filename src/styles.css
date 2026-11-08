@@ -17,16 +17,8 @@
   color-scheme: light;
 }
 /* ===== POLARIS: light, vivid, one fixed page at a time =====
-   The site is a bright aurora; the map (.mission) stays midnight, because satellite imagery reads best on dark.
-   Soft geometry (three radii), glass for floating chrome, one card, one active state. */
-.mission {
-  --bg: #071526; --ink: #dceaf2; --mute: #8799a8; --accent: #38c6e8; --card: #0b1d33;
-  --line: rgb(56 198 232 / .22); --line2: rgb(220 234 242 / .1);
-  --glass: rgb(9 24 43 / .66); --glass-edge: rgb(220 234 242 / .16);
-  --shadow: 0 1px 0 var(--glass-edge) inset, 0 12px 40px rgb(0 0 0 / .35);
-  --tint: rgb(56 198 232 / .1);
-  color-scheme: dark;
-}
+   One design language everywhere, the map included: aurora ground, glass chrome, one card, one active state.
+   Soft geometry (three radii). Only the satellite imagery itself is dark. */
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--bg); color: var(--ink); }
 body { margin: 0; height: 100dvh; overflow: hidden; font-family: var(--body); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
@@ -285,7 +277,7 @@ html.reduce .strip { overflow-x: auto; }
 .chart__table thead th { color: var(--mute); position: sticky; top: 0; background: var(--bg); }
 
 /* ===== Mission view (Cesium) ===== */
-.mission { position: fixed; inset: 0; z-index: 200; background: var(--bg); color: var(--ink); outline: none; font-size: 14px; }
+.mission { position: fixed; inset: 0; z-index: 200; background: radial-gradient(62vmax 52vmax at 10% 6%, #7fb2ff, transparent 62%), radial-gradient(56vmax 46vmax at 94% 16%, #c8a2ff, transparent 62%), radial-gradient(64vmax 52vmax at 68% 108%, #ffb6cb, transparent 62%), var(--bg); color: var(--ink); outline: none; font-size: 14px; }
 .mission--boot { display: grid; place-items: center; color: var(--mute); }
 .mission--boot span::after { content: ''; display: block; height: 1px; margin-top: 10px; background: var(--accent); animation: load 1.2s var(--ease-mech) infinite; transform-origin: left; }
 @keyframes load { 0% { transform: scaleX(0); } 60% { transform: scaleX(1); } 100% { transform: scaleX(1); opacity: 0; } }
@@ -307,8 +299,8 @@ html.reduce .strip { overflow-x: auto; }
 .mbar__tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 .mbar__tabs button { color: var(--mute); }
 .mbar__tabs button:hover { color: var(--ink); }
-.mbar__tabs button[aria-current=page] { color: var(--ink); background: var(--tint); }
-.mbar__share { border: 1px solid var(--line); }
+.mbar__tabs button[aria-current=page] { color: #fff; background: var(--grad); box-shadow: 0 6px 16px rgb(95 80 240 / .35); }
+.mbar__share { border: 1px solid var(--glass-edge); background: rgb(255 255 255 / .6); }
 
 .panel, .legend, .probe { position: absolute; z-index: 4; background: var(--glass); border: 1px solid var(--glass-edge); border-radius: var(--r-lg); box-shadow: var(--shadow); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); }
 @media (prefers-reduced-transparency: reduce) { .panel, .legend, .probe, .obs, .mbar, .hint { backdrop-filter: none; background: var(--bg); } }
@@ -322,7 +314,7 @@ html.reduce .strip { overflow-x: auto; }
 .pcheck small, .presets small, .evlist small { color: var(--mute); font-size: 12px; }
 .prow { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
 .prow input[type=range] { flex: 1; }
-.panel input[type=date], .panel input:not([type]), .panel select { background: rgb(7 21 38 / .6); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; min-width: 0; color-scheme: dark; }
+.panel input[type=date], .panel input:not([type]), .panel select { background: rgb(255 255 255 / .75); border: 1px solid var(--line2); border-radius: var(--r-sm); padding: 8px 10px; min-width: 0; color-scheme: dark; }
 .panel input[type=range] { accent-color: var(--accent); width: 100%; }
 .panel input:focus-visible, .panel select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pfield { display: grid; gap: 4px; font-size: 12px; color: var(--mute); flex: 1; }
@@ -361,7 +353,7 @@ html.reduce .strip { overflow-x: auto; }
 .legend { right: 12px; bottom: 28px; width: 300px; padding: 16px; display: grid; gap: 12px; max-height: 45dvh; overflow: auto; }
 .legend__item { display: grid; gap: 6px; font-size: 12px; }
 .legend__item b { font-weight: 500; font-size: 13px; }
-.legend__item img { max-width: 100%; max-height: 150px; width: auto; height: auto; justify-self: start; background: rgb(220 234 242 / .92); padding: 3px; border-radius: 6px; }
+.legend__item img { max-width: 100%; max-height: 150px; width: auto; height: auto; justify-self: start; background: #fff; padding: 3px; border-radius: 6px; }
 .legend__item p { color: var(--mute); }
 .legend__item a { color: var(--accent); }
 
@@ -376,9 +368,9 @@ html.reduce .strip { overflow-x: auto; }
 .probe__x:hover { color: var(--ink); }
 
 .divider { position: absolute; z-index: 3; top: 56px; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); pointer-events: none; }
-.divider__handle { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: var(--accent); pointer-events: auto; cursor: ew-resize; touch-action: none;
-  box-shadow: 0 0 0 4px rgb(7 21 38 / .6); }
-.divider__handle::before { content: ''; position: absolute; inset: 12px 10px; border-left: 2px solid var(--bg); border-right: 2px solid var(--bg); }
+.divider__handle { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: var(--grad); pointer-events: auto; cursor: ew-resize; touch-action: none;
+  box-shadow: 0 0 0 4px rgb(255 255 255 / .7), 0 6px 18px rgb(95 80 240 / .4); }
+.divider__handle::before { content: ''; position: absolute; inset: 12px 10px; border-left: 2px solid #fff; border-right: 2px solid #fff; }
 .divider__handle input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: ew-resize; }
 .divider__handle:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
 .divider__tag { position: absolute; top: 14px; background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--glass-edge); border-radius: var(--pill); padding: 3px 10px; white-space: nowrap; }
@@ -386,7 +378,7 @@ html.reduce .strip { overflow-x: auto; }
 .mission--monitor .legend { bottom: 28px; }
 
 /* observatory overlays the globe */
-.obs { position: absolute; z-index: 4; left: 0; right: 0; top: 56px; bottom: 0; overflow: auto; background: rgb(7 21 38 / .78); backdrop-filter: blur(24px) saturate(140%); padding: 28px var(--gut) 60px; }
+.obs { position: absolute; z-index: 4; left: 0; right: 0; top: 56px; bottom: 0; overflow: auto; background: rgb(238 243 255 / .72); backdrop-filter: blur(24px) saturate(140%); padding: 28px var(--gut) 60px; }
 .obs__top { max-width: 1400px; margin: 0 auto 24px; display: grid; gap: 6px; }
 .obs__top h2 { font-size: clamp(30px, 3.4vw, 46px); letter-spacing: -.03em; font-weight: 600; line-height: 1; }
 .obs__top p { color: var(--mute); }
@@ -435,7 +427,7 @@ html.reduce .strip { overflow-x: auto; }
   transform: translateY(100%); visibility: hidden; transition: transform .35s var(--ease-out), visibility 0s .35s; }
 .mission--mobile .panel.is-open { transform: none; visibility: visible; transition: transform .35s var(--ease-out); }
 .mission--mobile .panel__toggle { display: inline-flex; align-items: center; gap: 8px; position: absolute; z-index: 5; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom));
-  background: var(--accent); color: var(--bg); padding: 14px 22px; border-radius: var(--pill); font-weight: 500; box-shadow: 0 8px 24px rgb(0 0 0 / .4); }
+  background: var(--grad); color: #fff; padding: 14px 22px; border-radius: var(--pill); font-weight: 500; box-shadow: 0 8px 22px rgb(95 80 240 / .4); }
 .mission--mobile .panel.is-open ~ .legend, .mission--mobile .panel__toggle[aria-expanded=true] { bottom: calc(62dvh + 10px); }
 .mission--mobile .legend { left: 8px; right: auto; top: 60px; bottom: auto; width: auto; max-width: 60vw; max-height: 30dvh; padding: 8px 10px; }
 .mission--mobile .legend__item p { display: none; }

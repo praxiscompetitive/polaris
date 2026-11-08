@@ -35,16 +35,20 @@ export default function Globe({ stack, opacity, cam, camKey, split, mobile, onRe
 
   useEffect(() => {
     if (TOKEN) Cesium.Ion.defaultAccessToken = TOKEN
+    const terrain = TOKEN ? Cesium.Terrain.fromWorldTerrain() : undefined
     const v = new Cesium.Viewer(el.current!, {
       baseLayer: false, animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
       sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false,
       requestRenderMode: true, maximumRenderTimeChange: Infinity, creditContainer: credits.current!,
-      terrain: TOKEN ? Cesium.Terrain.fromWorldTerrain() : undefined,
+      terrain,
       skyBox: false, skyAtmosphere: new Cesium.SkyAtmosphere(),
+      contextOptions: { webgl: { alpha: true } }, // the page's aurora shows behind the globe
     })
     const s = v.scene
-    s.backgroundColor = Cesium.Color.fromCssColorString('#071526')
-    s.globe.baseColor = Cesium.Color.fromCssColorString('#0c2238')
+    // a rejected or expired token must not blank the globe: fall back to the smooth ellipsoid
+    terrain?.errorEvent.addEventListener(() => { s.terrainProvider = new Cesium.EllipsoidTerrainProvider() })
+    s.backgroundColor = Cesium.Color.TRANSPARENT
+    s.globe.baseColor = Cesium.Color.fromCssColorString('#8fb4f0')
     s.globe.showGroundAtmosphere = true
     if (s.sun) s.sun.show = false
     if (s.moon) s.moon.show = false
@@ -86,6 +90,8 @@ export default function Globe({ stack, opacity, cam, camKey, split, mobile, onRe
         url: tileUrl(layer, t), maximumLevel: layer.max, credit: new Cesium.Credit(`${layer.title}: ${source(layer.src).provider}`),
       }))
       if (layer.overlay) il.alpha = opacity
+      // light design: lift the near-black ocean of the base imagery a little. Data overlays and night lights stay exactly as published.
+      if (!layer.overlay && layer.id !== 'nightlights') { il.gamma = 0.7; il.brightness = 1.08 }
       if (side) il.splitDirection = side === 'left' ? Cesium.SplitDirection.LEFT : Cesium.SplitDirection.RIGHT
     }
     v.scene.requestRender()

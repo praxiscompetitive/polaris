@@ -16,6 +16,7 @@ serverless functions.
   Sri Lanka and Sources. One circular transition connects pages, the map, and the map's own views.
 - **Explorer**: a Cesium globe with base imagery, land layers, hazards and reference layers, any date back to 2000, live
   NASA EONET events and point readouts.
+- **Weather**: OpenWeatherMap clouds, precipitation, wind, temperature and pressure on the globe (needs a key).
 - **Ocean**: sea surface temperature and anomaly, chlorophyll, salinity, Copernicus surface currents, sea readouts.
 - **Monitor**: split-screen comparison of one layer on two dates, with ready-made stories (monsoon greening, forest
   clearing, growing night lights).
@@ -51,6 +52,7 @@ Both variables are optional. Copy `.env.example` to `.env` for local use.
 | Variable | Where | Effect |
 |---|---|---|
 | `VITE_CESIUM_TOKEN` | build | Cesium World Terrain (real relief). Without it the globe is a smooth ellipsoid. |
+| `OPENWEATHER_API_KEY` | server | OpenWeatherMap weather layers in Explorer (clouds, precipitation, wind, temperature, pressure), proxied by `api/owm.ts`. Without it the Weather layers stay blank. [Free key](https://home.openweathermap.org/api_keys). |
 | `FIRMS_MAP_KEY` | server | NASA FIRMS fire hotspots. Without it those panels say "not configured". [Free key](https://firms.modaps.eosdis.nasa.gov/api/map_key/). |
 
 ## Rate limits and keys
@@ -60,6 +62,9 @@ Both variables are optional. Copy `.env.example` to `.env` for local use.
   call, each instance makes at most 12 upstream calls per 10 minutes (stale data is served beyond that), and each client
   is limited to 30 requests per minute (HTTP 429). Limits are per function instance; for a hard global limit move the
   counters to Vercel KV or Upstash.
+- **OpenWeather key (server):** the free plan allows 60 calls per minute and 1,000,000 per month. Tiles are proxied by
+  `api/owm.ts`, cached for 10 minutes at the CDN and in memory, and each instance makes at most 50 upstream calls per
+  minute (stale tiles beyond that). Each client is limited to 300 tile requests per minute.
 - **Cesium token (browser):** it ships in the bundle, so it cannot be limited in code. In the
   [Cesium ion dashboard](https://ion.cesium.com/tokens), restrict the token to the *assets:read* scope, to the World
   Terrain asset only, and to your site's domain under *Allowed URLs*. Terrain only loads when a map view opens.

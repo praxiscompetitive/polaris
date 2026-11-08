@@ -147,7 +147,7 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
         <>
           {mobile && <button className="panel__toggle" aria-expanded={panel} onClick={() => setPanel(!panel)}><SlidersHorizontal size={18} /> {panel ? 'Hide controls' : 'Controls'}</button>}
           <aside className={`panel ${panel ? 'is-open' : ''}`} aria-label={`${TITLES[st.view]} controls`}>
-            {st.view === 'explorer' && <><LayerPanel {...vp} groups={['base', 'land', 'hazard', 'reference']} places /><EonetToggle {...vp} /></>}
+            {st.view === 'explorer' && <><LayerPanel {...vp} groups={['base', 'land', 'weather', 'hazard', 'reference']} places /><EonetToggle {...vp} /></>}
             {st.view === 'ocean' && <LayerPanel {...vp} groups={['base', 'ocean', 'reference']} places="ocean" />}
             {st.view === 'monitor' && <Monitor {...vp} />}
             {st.view === 'events' && <Events {...vp} />}

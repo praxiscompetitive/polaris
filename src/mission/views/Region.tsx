@@ -47,7 +47,7 @@ export default function RegionPanel({ st, set, fly }: VP) {
         </table>
         {series && series.length > 1 && (
           <Chart title={`Daily mean sea surface temperature off ${r.coast[pt].name}, last 30 days`} height={160}
-            series={[{ name: `Off ${r.coast[pt].name}`, color: '#2399ba', pts: series.map((d, i) => [i, d.v]) }]}
+            series={[{ name: `Off ${r.coast[pt].name}`, color: '#2f55e8', pts: series.map((d, i) => [i, d.v]) }]}
             xFmt={(i) => series[i]?.t.slice(5) ?? ''} xTicks={[0, Math.floor(series.length / 2), series.length - 1]} yFmt={(v) => `${v.toFixed(1)}°`} />
         )}
         <p className="note">Model values (Open-Meteo Marine). Tap any sea point on the globe for another readout.</p>

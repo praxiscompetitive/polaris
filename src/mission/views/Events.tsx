@@ -30,7 +30,7 @@ function usePoints(viewer: Cesium.Viewer, pts: Pt[]) {
   useEffect(() => {
     const c = col.current!
     c.removeAll()
-    const ring = Cesium.Color.fromCssColorString('#071526')
+    const ring = Cesium.Color.WHITE
     for (const p of pts)
       c.add({ position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat), color: Cesium.Color.fromCssColorString(p.color), pixelSize: p.size,
         outlineColor: ring, outlineWidth: p.size > 4 ? 2 : 0, id: p.id, disableDepthTestDistance: 0 })

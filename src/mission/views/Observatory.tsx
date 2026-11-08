@@ -4,7 +4,7 @@ import { source } from '../../data/sources'
 import { useData } from '../../lib/api'
 import Chart from '../../components/Chart'
 
-const C1 = '#2399ba', C2 = '#be781f', REF = '#8799a8' // C1/C2 validated categorical pair; REF is a neutral reference line
+const C1 = '#2f55e8', C2 = '#be781f', REF = '#4b5a7c' // C1/C2 validated categorical pair; REF is a neutral reference line
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const doyTicks = [0, 59, 120, 181, 243, 304, 365]
 const doyFmt = (d: number) => { const t = new Date(Date.UTC(2001, 0, 1) + d * 864e5); return `${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()}` }

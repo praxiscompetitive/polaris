@@ -20,6 +20,8 @@ export const SOURCES: Source[] = [
     licence: 'Copernicus Marine Service licence: free, attribution required.', note: 'Product GLOBAL_ANALYSISFORECAST_PHY_001_024, daily mean surface currents, 1/12°.' },
   { id: 'open-meteo', name: 'Marine and Forecast APIs', provider: 'Open-Meteo', url: 'https://open-meteo.com/',
     licence: 'CC BY 4.0.', note: 'Model data (not direct observation) for point readouts. Marine values come from Copernicus and ECMWF models.' },
+  { id: 'owm', name: 'Weather maps', provider: 'OpenWeather', url: 'https://openweathermap.org/api/weathermaps',
+    licence: 'CC BY-SA 4.0. Weather data provided by OpenWeather. Requires a free API key (kept server-side).', note: 'Model-based global weather layers, current conditions, refreshed about every 10 minutes. Not observations.' },
   { id: 'gfw', name: 'Tree cover loss (Hansen et al. 2013, UMD)', provider: 'University of Maryland via Global Forest Watch', url: 'https://www.globalforestwatch.org/',
     licence: 'CC BY 4.0. Cite Hansen et al. 2013, Science 342: 850-853.', note: 'Annual stand-replacement loss at 30 m, from Landsat.' },
   { id: 'cesium', name: 'Cesium World Terrain', provider: 'Cesium ion', url: 'https://cesium.com/platform/cesium-ion/content/cesium-world-terrain/',

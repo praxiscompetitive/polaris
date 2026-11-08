@@ -10,8 +10,8 @@
 const hits = new Map<string, number[]>()
 
 /** Per-client sliding window. Returns a 429 response when the client is over the limit, else null. */
-export function limited(req: Request, max = 30, windowMs = 60_000): Response | null {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local'
+export function limited(req: Request, max = 30, windowMs = 60_000, ns = 'api'): Response | null {
+  const ip = ns + ':' + (req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local')
   const now = Date.now()
   const h = (hits.get(ip) ?? []).filter((t) => now - t < windowMs)
   if (h.length >= max) {
@@ -25,24 +25,29 @@ export function limited(req: Request, max = 30, windowMs = 60_000): Response | n
 
 const store = new Map<string, { at: number; v: unknown }>()
 const inflight = new Map<string, Promise<unknown>>()
-let spent: number[] = []
+const spent = new Map<string, number[]>()
 
 /**
  * Cache an upstream fetch for `ttlMs`, share one in-flight call between concurrent requests, and spend at most
- * `budget` upstream calls per 10 minutes. Over budget: serve the stale value, or fail if there is none.
+ * `budget` upstream calls per `budgetMs` (default 10 minutes), counted per namespace. Over budget: serve the stale value, or fail if there is none.
  * Failed calls still count against the budget, so errors cannot turn into a retry storm.
  */
-export function memo<T>(key: string, ttlMs: number, fn: () => Promise<T>, budget = 12): Promise<T> {
+export function memo<T>(key: string, ttlMs: number, fn: () => Promise<T>, budget = 12, budgetMs = 600_000, ns = 'api'): Promise<T> {
   const now = Date.now()
   const hit = store.get(key)
   if (hit && now - hit.at < ttlMs) return Promise.resolve(hit.v as T)
   const run = inflight.get(key)
   if (run) return run as Promise<T>
-  spent = spent.filter((t) => now - t < 600_000)
-  if (spent.length >= budget) return hit ? Promise.resolve(hit.v as T) : Promise.reject(new Error('upstream budget exhausted, try later'))
-  spent.push(now)
+  const used = (spent.get(ns) ?? []).filter((t) => now - t < budgetMs)
+  spent.set(ns, used)
+  if (used.length >= budget) return hit ? Promise.resolve(hit.v as T) : Promise.reject(new Error('upstream budget exhausted, try later'))
+  used.push(now)
   const p = fn()
-    .then((v) => (store.set(key, { at: Date.now(), v }), v))
+    .then((v) => {
+      store.set(key, { at: Date.now(), v })
+      if (store.size > 400) store.delete(store.keys().next().value!) // oldest out: bounded memory
+      return v
+    })
     .finally(() => inflight.delete(key))
   inflight.set(key, p)
   return p
