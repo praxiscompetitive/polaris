@@ -26,10 +26,9 @@ uniform sampler2D day;
 varying vec2 vUv; varying vec3 vN;
 void main() {
   vec3 t = texture2D(day, vUv).rgb;
-  float lum = dot(t, vec3(.299, .587, .114));
-  float sea = 1.0 - smoothstep(.02, .09, lum);
+  float sea = smoothstep(1.0, 1.8, t.b / (max(t.r, t.g) + .0005)); // the Blue Marble's ocean is navy; land is never blue-dominant, however dark
   vec3 ocean = mix(vec3(.16, .46, .90), vec3(.30, .66, .98), vUv.y);
-  vec3 land = clamp(t * 1.55 + .10, 0., 1.);
+  vec3 land = clamp(pow(t, vec3(.62)) * 1.25, 0., 1.);
   land = mix(vec3(dot(land, vec3(.333))), land, 1.25);
   vec3 c = mix(land, ocean, sea);
   float lit = .74 + .34 * clamp(dot(vN, normalize(vec3(-.45, .55, .70))), 0., 1.);
