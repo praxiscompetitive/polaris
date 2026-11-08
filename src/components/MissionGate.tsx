@@ -3,7 +3,10 @@ import { createPortal } from 'react-dom'
 import { parse } from '../lib/deeplink'
 
 // Cesium and everything that touches it live behind this import: the landing page never downloads them.
-const Mission = lazy(() => import('../mission/Mission'))
+const load = () => import('../mission/Mission')
+const Mission = lazy(load)
+/** Start downloading the map on intent (hover, focus, touch), so opening it is quick without costing anyone who never does. */
+export const warmMission = () => { void load() }
 
 /** Opens a Mission view whenever the hash is #app/<view>. Back, forward and pasted links all route through here. */
 export default function MissionGate({ mobile = false }: { mobile?: boolean }) {

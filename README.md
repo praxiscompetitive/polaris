@@ -14,7 +14,7 @@ serverless functions.
 
 - **Eight fixed pages**, one per header icon, with no scrolling: Home, Explorer, Ocean, Monitor, Events, Observatory,
   Sri Lanka and Sources. One circular transition connects pages, the map, and the map's own views.
-- **Explorer**: a Cesium globe with base imagery, land layers, hazards and reference layers, any date back to 2000, live
+- **Explorer**: a Cesium globe with Google Earth-style navigation (compass, zoom, 3D tilt, live coordinates and eye altitude), base imagery, land layers, hazards and reference layers, any date back to 2000, live
   NASA EONET events and point readouts.
 - **Weather**: OpenWeatherMap clouds, precipitation, wind, temperature and pressure on the globe (needs a key).
 - **Ocean**: sea surface temperature and anomaly, chlorophyll, salinity, Copernicus surface currents, sea readouts.

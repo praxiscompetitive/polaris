@@ -42,12 +42,11 @@ export default function Globe({ stack, opacity, cam, camKey, split, mobile, onRe
       requestRenderMode: true, maximumRenderTimeChange: Infinity, creditContainer: credits.current!,
       terrain,
       skyBox: false, skyAtmosphere: new Cesium.SkyAtmosphere(),
-      contextOptions: { webgl: { alpha: true } }, // the page's aurora shows behind the globe
     })
     const s = v.scene
     // a rejected or expired token must not blank the globe: fall back to the smooth ellipsoid
     terrain?.errorEvent.addEventListener(() => { s.terrainProvider = new Cesium.EllipsoidTerrainProvider() })
-    s.backgroundColor = Cesium.Color.TRANSPARENT
+    s.backgroundColor = Cesium.Color.fromCssColorString('#e8eefc') // solid, not transparent: a see-through canvas leaves a dark fringe on the globe's edge
     s.globe.baseColor = Cesium.Color.fromCssColorString('#8fb4f0')
     s.globe.showGroundAtmosphere = true
     if (s.sun) s.sun.show = false
@@ -85,11 +84,13 @@ export default function Globe({ stack, opacity, cam, camKey, split, mobile, onRe
   useEffect(() => {
     const v = viewer.current!
     v.imageryLayers.removeAll()
-    for (const { layer, t, side } of stack) {
+    for (const [i, { layer, t, side }] of stack.entries()) {
       const il = v.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
         url: tileUrl(layer, t), maximumLevel: layer.max, credit: new Cesium.Credit(`${layer.title}: ${source(layer.src).provider}`),
       }))
       if (layer.overlay) il.alpha = opacity
+      // no-data between passes is pure black: make it transparent so the layer underneath shows through
+      if (i > 0 && !layer.overlay && layer.step === 'P1D') { il.colorToAlpha = Cesium.Color.BLACK; il.colorToAlphaThreshold = 0.03 }
       // light design: lift the near-black ocean of the base imagery a little. Data overlays and night lights stay exactly as published.
       if (!layer.overlay && layer.id !== 'nightlights') { il.gamma = 0.7; il.brightness = 1.08 }
       if (side) il.splitDirection = side === 'left' ? Cesium.SplitDirection.LEFT : Cesium.SplitDirection.RIGHT

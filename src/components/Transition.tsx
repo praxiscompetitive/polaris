@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { EASE, reduced, scramble } from '../motion'
 import { parse } from '../lib/deeplink'
+import { warmMission } from './MissionGate'
 import { SECTIONS, SectionId, fromHash, get, setCurrent } from '../store'
 
 /**
@@ -44,11 +45,13 @@ export function useSiteNav() {
         go(() => { location.hash = href }, SECTIONS.find((s) => s.id === fromHash(href))!.label, originOf(a))
       }
     }
+    const intent = (e: Event) => { if ((e.target as Element).closest?.('a[href^="#app/"]')) warmMission() }
     const sync = () => setCurrent(fromHash())
+    for (const t of ['pointerover', 'focusin', 'touchstart']) addEventListener(t, intent, { passive: true })
     addEventListener('click', click)
     addEventListener('popstate', sync)
     addEventListener('hashchange', sync)
-    return () => { removeEventListener('click', click); removeEventListener('popstate', sync); removeEventListener('hashchange', sync) }
+    return () => { for (const t of ['pointerover', 'focusin', 'touchstart']) removeEventListener(t, intent); removeEventListener('click', click); removeEventListener('popstate', sync); removeEventListener('hashchange', sync) }
   }, [])
 }
 

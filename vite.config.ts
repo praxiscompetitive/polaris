@@ -33,7 +33,8 @@ export default defineConfig({
     react(),
     devApi(),
     // node_modules/cesium/Build/Cesium/<dir> is served and built as /cesium/<dir>
-    viteStaticCopy({ targets: ['Workers', 'Assets', 'Widgets', 'ThirdParty'].map((d) => ({ src: `${CESIUM}/${d}`, dest: 'cesium', rename: { stripBase: 4 } })) }),
+    // skip textures POLARIS never uses (default base map, skybox, lens flare): about 1.7 MB less to build and deploy
+    viteStaticCopy({ targets: ['Workers', 'Assets', 'Widgets', 'ThirdParty'].map((d) => ({ src: `${CESIUM}/${d}`, dest: 'cesium', rename: { stripBase: 4 }, ...(d === 'Assets' ? { globOptions: { ignore: ['**/NaturalEarthII/**', '**/SkyBox/**', '**/LensFlare/**'] } } : {}) })) }),
   ],
   // Cesium is one big lazy chunk that only loads inside a Mission view
   build: { chunkSizeWarningLimit: 6000 },

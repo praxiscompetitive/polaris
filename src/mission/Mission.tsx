@@ -7,7 +7,9 @@ import { marine, weather } from '../data/feeds'
 import { Cam, Link, serialize, View, VIEWS } from '../lib/deeplink'
 import { fmtLL } from '../components/Hero'
 import { go, originOf } from '../components/Transition'
+import { Brand } from '../components/Header'
 import Globe, { Cesium, Stack } from './Globe'
+import Controls from './Controls'
 import LayerPanel from './views/Layers'
 import Monitor from './views/Monitor'
 import Events, { EonetOverlay, EvDetail, Picked } from './views/Events'
@@ -56,6 +58,8 @@ function buildStack(st: MState): Stack {
     if (l === cmpL) s.push({ layer: l, t: st.t, side: 'left' }, { layer: l, t: st.cmp, side: 'right' })
     else s.push({ layer: l, t: st.t })
   }
+  // daily imagery has gaps between satellite passes: a continuous Blue Marble underneath fills them (Globe makes the gaps see-through)
+  if (base.step === 'P1D' && !cmpL) s.unshift({ layer: layer('relief')! })
   return [...s, ...ref.map((l) => ({ layer: l }))]
 }
 
@@ -136,7 +140,7 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
         onReady={setViewer} onCamera={(c) => setSt((s) => ({ ...s, c }))} onPick={onPick} />
 
       <header className="mbar">
-        <button className="mbar__back" onClick={(e) => close(originOf(e.currentTarget))} aria-label="Close and return to the overview"><ArrowLeft size={18} /><img src="/brand/icon-180.png" alt="" width={26} height={26} /><span>POLARIS</span></button>
+        <button className="mbar__back" onClick={(e) => close(originOf(e.currentTarget))} aria-label="Close and return to the overview"><ArrowLeft size={18} /><Brand /></button>
         <nav className="mbar__tabs" aria-label="Views">
           {VIEWS.map((v) => <button key={v} aria-current={st.view === v ? 'page' : undefined} onClick={(e) => tab(v, originOf(e.currentTarget))}>{TITLES[v]}</button>)}
         </nav>
@@ -154,6 +158,7 @@ export default function Mission({ link, mobile }: { link: Link; mobile: boolean 
             {st.view === 'region' && <RegionPanel {...vp} />}
           </aside>
           {st.view === 'observatory' && <Observatory />}
+          {st.view !== 'observatory' && !mobile && <Controls viewer={viewer!} />}
         </>
       )}
 
