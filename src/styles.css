@@ -84,7 +84,8 @@ section { position: relative; }
 .stage[data-page=observatory] { --g1: #9fa9ff; --g2: #dc9eff; --g3: #82e4ff; }
 .stage[data-page=region] { --g1: #64e8c8; --g2: #77b8ff; --g3: #ffd194; }
 .stage[data-page=sources] { --g1: #b9c8ff; --g2: #e5cbff; --g3: #c1efff; }
-.page { position: absolute; inset: 68px 0 0 0; overflow: hidden auto; display: flex; flex-direction: column; animation: pagein .5s var(--ease-out) both; scrollbar-width: thin; }
+.page { position: absolute; inset: 68px 0 0 0; overflow: hidden; animation: pagein .5s var(--ease-out) both; }
+.page__in { display: flex; flex-direction: column; min-height: 100%; transform-origin: top center; }
 @keyframes pagein { from { opacity: 0; transform: translateY(14px) scale(.99); } }
 
 /* ===== Transition veil: one animation for pages, the map, and moving inside the map ===== */
@@ -97,7 +98,7 @@ section { position: relative; }
 .hero__stmt { font-size: clamp(24px, 2.6vw, 36px); line-height: 1.15; letter-spacing: -.02em; font-weight: 500; max-width: 18ch; }
 .hero__sub { color: var(--mute); max-width: 40ch; font-size: 18px; }
 .hero__row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
-.hero__stage { position: relative; aspect-ratio: 1; width: 100%; max-height: 100%; justify-self: center; }
+.hero__stage { position: relative; aspect-ratio: 1; width: min(100%, calc(100dvh - 68px - 90px)); justify-self: center; } /* header, ticker and padding */
 .hero__canvas, .hero__fallback { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; filter: drop-shadow(0 26px 34px rgb(47 85 232 / .3)); }
 .hero__fallback { object-fit: contain; }
 .hero__canvas:active { cursor: grabbing; }

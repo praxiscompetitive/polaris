@@ -1,5 +1,7 @@
 /* ===== POLARIS for phones. Loaded only by the mobile tree. Fixed pages, bottom dock, no header. ===== */
 .m .page { inset: 0 0 calc(84px + env(safe-area-inset-bottom)) 0; }
+/* phones scroll inside the page; the content is never scaled */
+.m .page--scroll { overflow: hidden auto; overscroll-behavior: contain; }
 .m .sec { padding: 20px 16px; gap: 16px; }
 .m .h2 { font-size: clamp(28px, 8vw, 36px); }
 .m .snap__frame { width: min(100%, calc((100dvh - 330px) * var(--ar))); }

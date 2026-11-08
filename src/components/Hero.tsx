@@ -174,9 +174,8 @@ export function useMarkers() {
 export default function Hero() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const [noGL, setNoGL] = useState(false)
-  const [pt, setPt] = useState<{ lat: number; lon: number } | null>(null)
   const markers = useMarkers()
-  useEarth(canvas, () => setNoGL(true), { onPoint: setPt, focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
+  useEarth(canvas, () => setNoGL(true), { focus: { lat: 7.8, lon: 80.7 }, markers: markers.list })
 
   useEffect(() => {
     // context.revert() restores the elements, so a remount (React strict mode) animates from the real start, not from hidden
@@ -201,10 +200,6 @@ export default function Hero() {
         {noGL
           ? <img className="hero__fallback" src="/earth-day.jpg" alt="Blue Marble: cloud-free Earth, NASA" width={2048} height={1024} />
           : <canvas ref={canvas} className="hero__canvas" aria-label="Interactive Earth. Drag to rotate." />}
-        <figcaption className="readout" aria-live="off">
-          <span>{pt ? fmtLL(pt.lat, pt.lon) : 'Drag to rotate'}</span>
-          {markers.list && <span className="legendline"><i className="swatch" style={{ background: '#d95926' }} /> {markers.open} natural events open now (NASA EONET)</span>}
-        </figcaption>
       </figure>
     </section>
   )

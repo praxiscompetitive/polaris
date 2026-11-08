@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { reduced } from '../motion'
 import { SECTIONS, useStore } from '../store'
+import Page from '../components/Page'
 import Transition, { useSiteNav } from '../components/Transition'
 import Icon from '../components/Icons'
 import { fmtLL, useEarth, useMarkers } from '../components/Hero'
@@ -58,14 +59,14 @@ export default function MobileApp() {
   useEffect(() => { document.documentElement.classList.toggle('reduce', reduced()) }, [])
   useSiteNav()
   const { current } = useStore()
-  const Page = current === 'home' ? null : PAGES[current]
+  const Body = current === 'home' ? null : PAGES[current]
 
   return (
     <div className="m">
       <main className="stage" data-page={current}>
-        <div className="page" key={current}>
-          {Page ? <Page /> : <><Hero /><LiveStrip /></>}
-        </div>
+        <Page key={current} scroll>
+          {Body ? <Body /> : <><Hero /><LiveStrip /></>}
+        </Page>
       </main>
       <Dock />
       <Transition />

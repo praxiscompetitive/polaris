@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { reduced } from './motion'
 import Header from './components/Header'
+import Page from './components/Page'
 import Transition, { useSiteNav } from './components/Transition'
 import Hero from './components/Hero'
 import { LiveStrip, PAGES } from './components/Landing'
@@ -12,16 +13,16 @@ export default function App() {
   useEffect(() => { document.documentElement.classList.toggle('reduce', reduced()) }, [])
   useSiteNav()
   const { current } = useStore()
-  const Page = current === 'home' ? null : PAGES[current]
+  const Body = current === 'home' ? null : PAGES[current]
 
   return (
     <>
       <a className="skip" href="#app/explorer">Skip to the globe</a>
       <Header />
       <main className="stage" data-page={current}>
-        <div className="page" key={current}>
-          {Page ? <Page /> : <><Hero /><LiveStrip /></>}
-        </div>
+        <Page key={current}>
+          {Body ? <Body /> : <><Hero /><LiveStrip /></>}
+        </Page>
       </main>
       <Transition />
       <MissionGate />
