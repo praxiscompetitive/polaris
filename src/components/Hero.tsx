@@ -31,6 +31,7 @@ varying vec2 vUv; varying vec3 vN;
 void main() {
   vec3 t = texture2D(day, vUv).rgb;
   vec3 c = clamp(pow(t, vec3(.62)) * 1.25, 0., 1.); // the Blue Marble's own colours, just lifted for a light page
+  c += vec3(.05, .16, .34) * (1. - smoothstep(.0, .22, dot(c, vec3(.299, .587, .114)))); // lighten the near-black ocean, keeping its navy hue
   float lit = .74 + .34 * clamp(dot(vN, normalize(vec3(-.45, .55, .70))), 0., 1.);
   c *= lit;
   gl_FragColor = vec4(c, 1.0);
